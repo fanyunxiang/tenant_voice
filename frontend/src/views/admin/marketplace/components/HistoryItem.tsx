@@ -1,13 +1,6 @@
 import React from 'react';
 // Chakra imports
-import {
-  Box,
-  Flex,
-  Icon,
-  Image,
-  Text,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { Box, Flex, Icon, Image, Text, useColorModeValue } from '@chakra-ui/react';
 // Custom components
 import Card from 'components/card/Card';
 // Assets
@@ -40,14 +33,7 @@ export default function NFT(props: {
       <Flex direction={{ base: 'column' }} justify="center">
         <Flex position="relative" align="center">
           <Box>
-            <Image
-              alt=""
-              src={image.src}
-              w="66px"
-              h="66px"
-              borderRadius="20px"
-              me="16px"
-            />
+            <Image alt="" src={image.src} w="66px" h="66px" borderRadius="20px" me="16px" />
           </Box>
           <Flex
             direction="column"
@@ -82,12 +68,7 @@ export default function NFT(props: {
             align="center"
           >
             <Icon as={FaEthereum} color={textColor} width="9px" me="7px" />
-            <Text
-              w="max-content"
-              fontWeight="700"
-              fontSize="md"
-              color={textColor}
-            >
+            <Text w="max-content" fontWeight="700" fontSize="md" color={textColor}>
               {price}
             </Text>
           </Flex>

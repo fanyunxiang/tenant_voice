@@ -89,13 +89,7 @@ export default function HeaderLinks(props: {
         >
           <Icon color={ethColor} w="9px" h="14px" as={FaEthereum} />
         </Flex>
-        <Text
-          w="max-content"
-          color={ethColor}
-          fontSize="sm"
-          fontWeight="700"
-          me="6px"
-        >
+        <Text w="max-content" color={ethColor} fontSize="sm" fontWeight="700" me="6px">
           1,924
           <Text as="span" display={{ base: 'none', md: 'unset' }}>
             {' '}
@@ -106,14 +100,7 @@ export default function HeaderLinks(props: {
       <SidebarResponsive routes={routes} />
       <Menu>
         <MenuButton p="0px" zIndex={999}>
-          <Icon
-            mt="6px"
-            as={MdNotificationsNone}
-            color={navbarIcon}
-            w="18px"
-            h="18px"
-            me="10px"
-          />
+          <Icon mt="6px" as={MdNotificationsNone} color={navbarIcon} w="18px" h="18px" me="10px" />
         </MenuButton>
         <MenuList
           zIndex={999}
@@ -131,13 +118,7 @@ export default function HeaderLinks(props: {
             <Text fontSize="md" fontWeight="600" color={textColor}>
               Notifications
             </Text>
-            <Text
-              fontSize="sm"
-              fontWeight="500"
-              color={textColorBrand}
-              ms="auto"
-              cursor="pointer"
-            >
+            <Text fontSize="sm" fontWeight="500" color={textColorBrand} ms="auto" cursor="pointer">
               Mark all read
             </Text>
           </Flex>
@@ -224,20 +205,10 @@ export default function HeaderLinks(props: {
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
-            <MenuItem
-              _hover={{ bg: 'none' }}
-              _focus={{ bg: 'none' }}
-              borderRadius="8px"
-              px="14px"
-            >
+            <MenuItem _hover={{ bg: 'none' }} _focus={{ bg: 'none' }} borderRadius="8px" px="14px">
               <Text fontSize="sm">Profile Settings</Text>
             </MenuItem>
-            <MenuItem
-              _hover={{ bg: 'none' }}
-              _focus={{ bg: 'none' }}
-              borderRadius="8px"
-              px="14px"
-            >
+            <MenuItem _hover={{ bg: 'none' }} _focus={{ bg: 'none' }} borderRadius="8px" px="14px">
               <Text fontSize="sm">Newsletter Settings</Text>
             </MenuItem>
             <MenuItem

@@ -5,8 +5,8 @@
 import { Box, Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
 import Link from 'next/link';
 import { IRoute } from 'types/navigation';
-import { usePathname } from 'next/navigation';
-import { useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useCallback, useEffect } from 'react';
 
 interface SidebarLinksProps {
   routes: IRoute[];
@@ -14,15 +14,13 @@ interface SidebarLinksProps {
 
 export function SidebarLinks(props: SidebarLinksProps) {
   const { routes } = props;
+  const router = useRouter();
 
   //   Chakra color mode
   const pathname = usePathname();
 
   let activeColor = useColorModeValue('gray.700', 'white');
-  let inactiveColor = useColorModeValue(
-    'secondaryGray.600',
-    'secondaryGray.600',
-  );
+  let inactiveColor = useColorModeValue('secondaryGray.600', 'secondaryGray.600');
   let activeIcon = useColorModeValue('brand.500', 'white');
   let textColor = useColorModeValue('secondaryGray.500', 'white');
   let brandColor = useColorModeValue('brand.500', 'brand.400');
@@ -36,48 +34,38 @@ export function SidebarLinks(props: SidebarLinksProps) {
     [pathname],
   );
 
+  useEffect(() => {
+    routes.forEach((route) => {
+      if (route.layout === '/admin') {
+        router.prefetch(route.layout + route.path);
+      }
+    });
+  }, [router, routes]);
+
   // this function creates the links from the secondary accordions (for example auth -> sign-in -> default)
   const createLinks = (routes: IRoute[]) => {
     return routes.map((route, index: number) => {
-      if (
-        route.layout === '/admin' ||
-        route.layout === '/auth' ||
-        route.layout === '/rtl'
-      ) {
+      if (route.layout === '/admin' || route.layout === '/auth' || route.layout === '/rtl') {
         return (
           <Link key={index} href={route.layout + route.path}>
             {route.icon ? (
               <Box>
                 <HStack
-                  spacing={
-                    activeRoute(route.layout, route.path) ? '22px' : '26px'
-                  }
+                  spacing={activeRoute(route.layout, route.path) ? '22px' : '26px'}
                   py="5px"
                   ps="10px"
                 >
                   <Flex w="100%" alignItems="center" justifyContent="center">
                     <Box
-                      color={
-                        activeRoute(route.layout, route.path)
-                          ? activeIcon
-                          : textColor
-                      }
+                      color={activeRoute(route.layout, route.path) ? activeIcon : textColor}
                       me="18px"
                     >
                       {route.icon}
                     </Box>
                     <Text
                       me="auto"
-                      color={
-                        activeRoute(route.layout, route.path)
-                          ? activeColor
-                          : textColor
-                      }
-                      fontWeight={
-                        activeRoute(route.layout, route.path)
-                          ? 'bold'
-                          : 'normal'
-                      }
+                      color={activeRoute(route.layout, route.path) ? activeColor : textColor}
+                      fontWeight={activeRoute(route.layout, route.path) ? 'bold' : 'normal'}
                     >
                       {route.name}
                     </Text>
@@ -85,11 +73,7 @@ export function SidebarLinks(props: SidebarLinksProps) {
                   <Box
                     h="36px"
                     w="4px"
-                    bg={
-                      activeRoute(route.layout, route.path)
-                        ? brandColor
-                        : 'transparent'
-                    }
+                    bg={activeRoute(route.layout, route.path) ? brandColor : 'transparent'}
                     borderRadius="5px"
                   />
                 </HStack>
@@ -97,22 +81,14 @@ export function SidebarLinks(props: SidebarLinksProps) {
             ) : (
               <Box>
                 <HStack
-                  spacing={
-                    activeRoute(route.layout, route.path) ? '22px' : '26px'
-                  }
+                  spacing={activeRoute(route.layout, route.path) ? '22px' : '26px'}
                   py="5px"
                   ps="10px"
                 >
                   <Text
                     me="auto"
-                    color={
-                      activeRoute(route.layout, route.path)
-                        ? activeColor
-                        : inactiveColor
-                    }
-                    fontWeight={
-                      activeRoute(route.layout, route.path) ? 'bold' : 'normal'
-                    }
+                    color={activeRoute(route.layout, route.path) ? activeColor : inactiveColor}
+                    fontWeight={activeRoute(route.layout, route.path) ? 'bold' : 'normal'}
                   >
                     {route.name}
                   </Text>

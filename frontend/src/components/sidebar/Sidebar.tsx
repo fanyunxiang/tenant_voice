@@ -14,17 +14,6 @@ import {
   DrawerCloseButton,
 } from '@chakra-ui/react';
 import Content from 'components/sidebar/components/Content';
-import {
-  renderThumb,
-  renderTrack,
-  renderView,
-} from 'components/scrollbar/Scrollbar';
-import dynamic from 'next/dynamic';
-
-const Scrollbars = dynamic(
-  () => import('react-custom-scrollbars-2').then((mod) => mod.Scrollbars),
-  { ssr: true },
-);
 
 // Assets
 import { IoMenuOutline } from 'react-icons/io5';
@@ -43,10 +32,7 @@ function Sidebar(props: SidebarProps) {
   const { routes } = props;
 
   let variantChange = '0.2s linear';
-  let shadow = useColorModeValue(
-    '14px 17px 40px 4px rgba(112, 144, 176, 0.08)',
-    'unset',
-  );
+  let shadow = useColorModeValue('14px 17px 40px 4px rgba(112, 144, 176, 0.08)', 'unset');
   // Chakra Color Mode
   let sidebarBg = useColorModeValue('white', 'navy.800');
   let sidebarMargins = '0px';
@@ -64,9 +50,9 @@ function Sidebar(props: SidebarProps) {
         overflowX="hidden"
         boxShadow={shadow}
       >
-        <Scrollbars universal={true}>
+        <Box h="100%" overflowY="auto">
           <Content routes={routes} />
-        </Scrollbars>
+        </Box>
       </Box>
     </Box>
   );
@@ -79,7 +65,7 @@ export function SidebarResponsive(props: SidebarResponsiveProps) {
   let menuColor = useColorModeValue('gray.400', 'white');
   // // SIDEBAR
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const btnRef = React.useRef();
+  const btnRef = React.useRef<HTMLDivElement | null>(null);
 
   const { routes } = props;
   // let isWindows = navigator.platform.startsWith("Win");
@@ -102,9 +88,7 @@ export function SidebarResponsive(props: SidebarResponsiveProps) {
         isOpen={isOpen}
         onClose={onClose}
         placement={
-          isWindowAvailable() && window.document.documentElement.dir === 'rtl'
-            ? 'right'
-            : 'left'
+          isWindowAvailable() && window.document.documentElement.dir === 'rtl' ? 'right' : 'left'
         }
         finalFocusRef={btnRef}
       >
@@ -117,15 +101,9 @@ export function SidebarResponsive(props: SidebarResponsiveProps) {
             _hover={{ boxShadow: 'none' }}
           />
           <DrawerBody maxW="285px" px="0rem" pb="0">
-            <Scrollbars
-              autoHide
-              renderTrackVertical={renderTrack}
-              renderThumbVertical={renderThumb}
-              renderView={renderView}
-              universal={true}
-            >
+            <Box h="100%" overflowY="auto">
               <Content routes={routes} />
-            </Scrollbars>
+            </Box>
           </DrawerBody>
         </DrawerContent>
       </Drawer>

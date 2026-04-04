@@ -3,8 +3,15 @@
 .react-calendar {
   border: none !important;
   background-color: transparent !important;
-  font-family: var(--chakra-fonts-body, system-ui, -apple-system,
-      BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif);
+  font-family: var(
+    --chakra-fonts-body,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    'Helvetica Neue',
+    sans-serif
+  );
 }
 .react-calendar__navigation__prev2-button {
   display: none;

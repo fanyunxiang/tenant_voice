@@ -8,11 +8,7 @@ const nextConfig = {
   },
   outputFileTracingRoot: path.join(__dirname, '..'),
   images: {
-    domains: [
-      'images.unsplash.com',
-      'i.ibb.co',
-      'scontent.fotp8-1.fna.fbcdn.net',
-    ],
+    domains: ['images.unsplash.com', 'i.ibb.co', 'scontent.fotp8-1.fna.fbcdn.net'],
     // Make ENV
     unoptimized: true,
   },

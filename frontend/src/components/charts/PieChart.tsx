@@ -12,21 +12,10 @@ type PieChartProps = BoxProps & {
   chartOptions: any;
 };
 
-const PieChart = ({
-  chartData,
-  chartOptions,
-  minH = '260px',
-  ...boxProps
-}: PieChartProps) => {
+const PieChart = ({ chartData, chartOptions, minH = '260px', ...boxProps }: PieChartProps) => {
   return (
     <LazyChartContainer minH={minH} {...boxProps}>
-      <Chart
-        options={chartOptions}
-        type="pie"
-        width="100%"
-        height="100%"
-        series={chartData}
-      />
+      <Chart options={chartOptions} type="pie" width="100%" height="100%" series={chartData} />
     </LazyChartContainer>
   );
 };

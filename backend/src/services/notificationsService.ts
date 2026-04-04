@@ -1,19 +1,20 @@
 import { z } from 'zod';
-import { supabase } from '../db/supabaseClient';
+import { supabase } from '../db/supabaseClient.js';
 import {
   NotificationFilter,
   NotificationRecord,
   NotificationCategory,
-} from '../types/notifications';
+} from '../types/notifications.js';
 
 const notificationTable = 'notifications';
+const notificationCategorySchema = z.enum(['system', 'bid', 'social', 'project']);
 
 const notificationSchema = z.object({
   id: z.string(),
   user_id: z.string(),
   title: z.string(),
   body: z.string(),
-  category: z.string(),
+  category: notificationCategorySchema,
   link: z.string().optional(),
   is_read: z.boolean(),
   created_at: z.string(),
@@ -21,10 +22,12 @@ const notificationSchema = z.object({
 
 const assertCategory = (category?: string): NotificationCategory | undefined => {
   if (!category) return undefined;
-  const allowed: NotificationCategory[] = ['system', 'bid', 'social', 'project'];
-  if (allowed.includes(category as NotificationCategory)) {
-    return category as NotificationCategory;
+
+  const parsedCategory = notificationCategorySchema.safeParse(category);
+  if (parsedCategory.success) {
+    return parsedCategory.data;
   }
+
   throw new Error(`Unsupported notification category: ${category}`);
 };
 
@@ -46,7 +49,7 @@ export async function listNotifications(filter: NotificationFilter) {
     throw new Error(error.message);
   }
 
-  return (data || []).map((record) => notificationSchema.parse(record)) as NotificationRecord[];
+  return z.array(notificationSchema).parse(data ?? []) as NotificationRecord[];
 }
 
 export async function markAllAsRead(userId: string) {

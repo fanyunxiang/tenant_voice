@@ -13,24 +13,14 @@ export default function Banner(props: {
   following: number | string;
   [x: string]: any;
 }) {
-  const { banner, avatar, name, job, posts, followers, following, ...rest } =
-    props;
+  const { banner, avatar, name, job, posts, followers, following, ...rest } = props;
   // Chakra Color Mode
   const textColorPrimary = useColorModeValue('secondaryGray.900', 'white');
   const textColorSecondary = 'gray.400';
-  const borderColor = useColorModeValue(
-    'white !important',
-    '#111C44 !important',
-  );
+  const borderColor = useColorModeValue('white !important', '#111C44 !important');
   return (
     <Card mb={{ base: '0px', lg: '20px' }} alignItems="center" {...rest}>
-      <Box
-        bg={`url(${banner})`}
-        bgSize="cover"
-        borderRadius="16px"
-        h="131px"
-        w="100%"
-      />
+      <Box bg={`url(${banner})`} bgSize="cover" borderRadius="16px" h="131px" w="100%" />
       <Avatar
         mx="auto"
         src={avatar.src}

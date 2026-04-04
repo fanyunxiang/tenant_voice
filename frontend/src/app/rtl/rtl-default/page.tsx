@@ -23,27 +23,14 @@
 */
 
 // Chakra imports
-import {
-  Avatar,
-  Box,
-  Flex,
-  Icon,
-  Select,
-  SimpleGrid,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { Avatar, Box, Flex, Icon, Select, SimpleGrid, useColorModeValue } from '@chakra-ui/react';
 // Assets
 import Usa from '/public/img/dashboards/usa.png';
 // Custom components
 // import MiniCalendar from 'components/calendar/MiniCalendar';
 import MiniStatistics from 'components/card/MiniStatistics';
 import IconBox from 'components/icons/IconBox';
-import {
-  MdAddTask,
-  MdAttachMoney,
-  MdBarChart,
-  MdFileCopy,
-} from 'react-icons/md';
+import { MdAddTask, MdAttachMoney, MdBarChart, MdFileCopy } from 'react-icons/md';
 import CheckTable from 'views/admin/rtl/components/CheckTable';
 import ComplexTable from 'views/admin/rtl/components/ComplexTable';
 import DailyTraffic from 'views/admin/rtl/components/DailyTraffic';
@@ -61,20 +48,14 @@ export default function UserReports() {
   const boxBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
   return (
     <Box pt={{ base: '130px', md: '120px', xl: '120px' }}>
-      <SimpleGrid
-        columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }}
-        gap="20px"
-        mb="20px"
-      >
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }} gap="20px" mb="20px">
         <MiniStatistics
           startContent={
             <IconBox
               w="56px"
               h="56px"
               bg={boxBg}
-              icon={
-                <Icon w="32px" h="32px" as={MdBarChart} color={brandColor} />
-              }
+              icon={<Icon w="32px" h="32px" as={MdBarChart} color={brandColor} />}
             />
           }
           name="Earnings"
@@ -86,9 +67,7 @@ export default function UserReports() {
               w="56px"
               h="56px"
               bg={boxBg}
-              icon={
-                <Icon w="32px" h="32px" as={MdAttachMoney} color={brandColor} />
-              }
+              icon={<Icon w="32px" h="32px" as={MdAttachMoney} color={brandColor} />}
             />
           }
           name="Spend this month"
@@ -103,13 +82,7 @@ export default function UserReports() {
           }
           endContent={
             <Flex mt="10px">
-              <Select
-                id="balance"
-                variant="mini"
-                mt="5px"
-                me="0px"
-                defaultValue="usd"
-              >
+              <Select id="balance" variant="mini" mt="5px" me="0px" defaultValue="usd">
                 <option value="usd">USD</option>
                 <option value="eur">EUR</option>
                 <option value="gba">GBA</option>
@@ -137,9 +110,7 @@ export default function UserReports() {
               w="56px"
               h="56px"
               bg={boxBg}
-              icon={
-                <Icon w="32px" h="32px" as={MdFileCopy} color={brandColor} />
-              }
+              icon={<Icon w="32px" h="32px" as={MdFileCopy} color={brandColor} />}
             />
           }
           name="Total Projects"

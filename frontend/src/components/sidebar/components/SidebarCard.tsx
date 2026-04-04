@@ -1,11 +1,4 @@
-import {
-  Button,
-  Flex,
-  Image,
-  Link,
-  Text,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { Button, Flex, Image, Link, Text, useColorModeValue } from '@chakra-ui/react';
 import logoWhite from 'img/layout/logoWhite.png';
 
 export default function SidebarDocs() {
@@ -39,14 +32,7 @@ export default function SidebarDocs() {
       >
         <Image alt="" src={logoWhite.src} w="40px" h="40px" />
       </Flex>
-      <Flex
-        direction="column"
-        mb="12px"
-        align="center"
-        justify="center"
-        px="15px"
-        pt="55px"
-      >
+      <Flex direction="column" mb="12px" align="center" justify="center" px="15px" pt="55px">
         <Text
           fontSize={{ base: 'lg', xl: '18px' }}
           color="white"
@@ -58,15 +44,8 @@ export default function SidebarDocs() {
         >
           Upgrade to PRO
         </Text>
-        <Text
-          fontSize="14px"
-          color={'white'}
-          px="10px"
-          mb="14px"
-          textAlign="center"
-        >
-          Improve your development process and start doing more with
-          TenantVoice PRO!
+        <Text fontSize="14px" color={'white'} px="10px" mb="14px" textAlign="center">
+          Improve your development process and start doing more with TenantVoice PRO!
         </Text>
       </Flex>
       <Link href="https://tenantvoice.app/pro">

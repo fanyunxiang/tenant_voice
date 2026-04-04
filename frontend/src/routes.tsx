@@ -1,11 +1,5 @@
 import { Icon } from '@chakra-ui/react';
-import {
-  MdBarChart,
-  MdPerson,
-  MdHome,
-  MdLock,
-  MdOutlineShoppingCart,
-} from 'react-icons/md';
+import { MdBarChart, MdPerson, MdHome, MdLock, MdOutlineShoppingCart } from 'react-icons/md';
 
 // Admin Imports
 // import MainDashboard from './pages/admin/default';
@@ -29,14 +23,7 @@ const routes: IRoute[] = [
     name: 'NFT Marketplace',
     layout: '/admin',
     path: '/nft-marketplace',
-    icon: (
-      <Icon
-        as={MdOutlineShoppingCart}
-        width="20px"
-        height="20px"
-        color="inherit"
-      />
-    ),
+    icon: <Icon as={MdOutlineShoppingCart} width="20px" height="20px" color="inherit" />,
     secondary: true,
   },
   {

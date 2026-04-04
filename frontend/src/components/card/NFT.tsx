@@ -48,7 +48,7 @@ export default function NFT(props: {
                 alt={name}
                 fill
                 sizes="(min-width: 62em) 280px, 100vw"
-                placeholder="blur"
+                unoptimized
               />
             </Box>
           </AspectRatio>

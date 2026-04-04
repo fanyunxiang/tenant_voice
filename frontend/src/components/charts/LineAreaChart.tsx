@@ -20,13 +20,7 @@ const LineAreaChart = ({
 }: LineAreaChartProps) => {
   return (
     <LazyChartContainer minH={minH} {...boxProps}>
-      <Chart
-        options={chartOptions}
-        type="area"
-        width="100%"
-        height="100%"
-        series={chartData}
-      />
+      <Chart options={chartOptions} type="area" width="100%" height="100%" series={chartData} />
     </LazyChartContainer>
   );
 };

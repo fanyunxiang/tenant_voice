@@ -7,10 +7,7 @@ import { FaChevronLeft } from 'react-icons/fa';
 import Link from 'next/link';
 import { ReactNode } from 'react';
 
-function AuthIllustration(props: {
-  children: ReactNode;
-  illustrationBackground: string;
-}) {
+function AuthIllustration(props: { children: ReactNode; illustrationBackground: string }) {
   const authBg = useColorModeValue('white', 'navy.900');
   const { children, illustrationBackground } = props;
   // Chakra color mode
@@ -45,13 +42,7 @@ function AuthIllustration(props: {
             pt={{ lg: '0px', xl: '0px' }}
             w="fit-content"
           >
-            <Icon
-              as={FaChevronLeft}
-              me="12px"
-              h="13px"
-              w="8px"
-              color="secondaryGray.600"
-            />
+            <Icon as={FaChevronLeft} me="12px" h="13px" w="8px" color="secondaryGray.600" />
             <Text ms="0px" fontSize="sm" color="secondaryGray.600">
               Back to TenantVoice
             </Text>

@@ -116,14 +116,10 @@ export default function TopCreatorTable(props: { tableData: any }) {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    debugTable: true,
+    debugTable: false,
   });
   return (
-    <Flex
-      direction="column"
-      w="100%"
-      overflowX={{ sm: 'scroll', lg: 'hidden' }}
-    >
+    <Flex direction="column" w="100%" overflowX={{ sm: 'scroll', lg: 'hidden' }}>
       <Flex
         align={{ sm: 'flex-start', lg: 'center' }}
         justify="space-between"
@@ -159,10 +155,7 @@ export default function TopCreatorTable(props: { tableData: any }) {
                         fontSize={{ sm: '10px', lg: '12px' }}
                         color="gray.400"
                       >
-                        {flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                        {flexRender(header.column.columnDef.header, header.getContext())}
                         {{
                           asc: '',
                           desc: '',
@@ -189,10 +182,7 @@ export default function TopCreatorTable(props: { tableData: any }) {
                           minW={{ sm: '150px', md: '200px', lg: 'auto' }}
                           borderColor="transparent"
                         >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext(),
-                          )}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
                         </Td>
                       );
                     })}

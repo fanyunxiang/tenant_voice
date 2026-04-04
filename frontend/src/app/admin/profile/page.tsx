@@ -1,24 +1,14 @@
 'use client';
 
 import { Box, Grid } from '@chakra-ui/react';
-import { lazyCard } from 'utils/lazyClient';
 import banner from 'img/auth/banner.png';
 import avatar from 'img/avatars/avatar4.png';
-
-const Banner = lazyCard(() => import('views/admin/profile/components/Banner'));
-const General = lazyCard(
-  () => import('views/admin/profile/components/General'),
-);
-const Notifications = lazyCard(
-  () => import('views/admin/profile/components/Notifications'),
-);
-const Projects = lazyCard(
-  () => import('views/admin/profile/components/Projects'),
-);
-const Storage = lazyCard(
-  () => import('views/admin/profile/components/Storage'),
-);
-const Upload = lazyCard(() => import('views/admin/profile/components/Upload'));
+import Banner from 'views/admin/profile/components/Banner';
+import General from 'views/admin/profile/components/General';
+import Notifications from 'views/admin/profile/components/Notifications';
+import Projects from 'views/admin/profile/components/Projects';
+import Storage from 'views/admin/profile/components/Storage';
+import Upload from 'views/admin/profile/components/Upload';
 
 export default function ProfileOverview() {
   return (
@@ -44,11 +34,7 @@ export default function ProfileOverview() {
           followers="9.7k"
           following="274"
         />
-        <Storage
-          gridArea={{ base: '2 / 1 / 3 / 2', lg: '1 / 2 / 2 / 3' }}
-          used={25.6}
-          total={50}
-        />
+        <Storage gridArea={{ base: '2 / 1 / 3 / 2', lg: '1 / 2 / 2 / 3' }} used={25.6} total={50} />
         <Upload
           gridArea={{
             base: '3 / 1 / 4 / 2',
@@ -82,11 +68,7 @@ export default function ProfileOverview() {
           followers="9.7k"
           following="274"
         />
-        <General
-          gridArea={{ base: '2 / 1 / 3 / 2', lg: '1 / 2 / 2 / 3' }}
-          minH="365px"
-          pe="20px"
-        />
+        <General gridArea={{ base: '2 / 1 / 3 / 2', lg: '1 / 2 / 2 / 3' }} minH="365px" pe="20px" />
         <Notifications
           used={25.6}
           total={50}

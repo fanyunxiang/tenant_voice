@@ -1,13 +1,6 @@
 /*eslint-disable*/
 
-import {
-  Flex,
-  Link,
-  List,
-  ListItem,
-  Text,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { Flex, Link, List, ListItem, Text, useColorModeValue } from '@chakra-ui/react';
 
 export default function Footer() {
   const textColor = useColorModeValue('gray.400', 'white');
@@ -56,11 +49,7 @@ export default function Footer() {
             md: '44px',
           }}
         >
-          <Link
-            fontWeight="500"
-            color={textColor}
-            href="mailto:support@tenantvoice.app"
-          >
+          <Link fontWeight="500" color={textColor} href="mailto:support@tenantvoice.app">
             Support
           </Link>
         </ListItem>
@@ -70,11 +59,7 @@ export default function Footer() {
             md: '44px',
           }}
         >
-          <Link
-            fontWeight="500"
-            color={textColor}
-            href="https://tenantvoice.app/license"
-          >
+          <Link fontWeight="500" color={textColor} href="https://tenantvoice.app/license">
             License
           </Link>
         </ListItem>
@@ -84,20 +69,12 @@ export default function Footer() {
             md: '44px',
           }}
         >
-          <Link
-            fontWeight="500"
-            color={textColor}
-            href="https://tenantvoice.app/terms"
-          >
+          <Link fontWeight="500" color={textColor} href="https://tenantvoice.app/terms">
             Terms of Use
           </Link>
         </ListItem>
         <ListItem>
-          <Link
-            fontWeight="500"
-            color={textColor}
-            href="https://tenantvoice.app/blog"
-          >
+          <Link fontWeight="500" color={textColor} href="https://tenantvoice.app/blog">
             Blog
           </Link>
         </ListItem>

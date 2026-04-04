@@ -1,21 +1,8 @@
 'use client';
 
-import {
-  Box,
-  Flex,
-  FormLabel,
-  Icon,
-  Select,
-  SimpleGrid,
-  Text,
-} from '@chakra-ui/react';
+import { Box, Flex, FormLabel, Icon, Select, SimpleGrid, Text } from '@chakra-ui/react';
 import IconBox from 'components/icons/IconBox';
-import {
-  MdAddTask,
-  MdAttachMoney,
-  MdBarChart,
-  MdFileCopy,
-} from 'react-icons/md';
+import { MdAddTask, MdAttachMoney, MdBarChart, MdFileCopy } from 'react-icons/md';
 import Image from 'next/image';
 import Usa from 'img/dashboards/usa.png';
 
@@ -58,12 +45,8 @@ const cardStyles = {
 
 export default function StatsSection() {
   return (
-    <SimpleGrid
-      columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }}
-      gap="20px"
-      mb="20px"
-    >
-      {stats.slice(0, 2).map(stat => (
+    <SimpleGrid columns={{ base: 1, md: 2, lg: 3, '2xl': 6 }} gap="20px" mb="20px">
+      {stats.slice(0, 2).map((stat) => (
         <Flex key={stat.label} direction="column" {...cardStyles}>
           <IconBox
             w="56px"
@@ -112,13 +95,7 @@ export default function StatsSection() {
         <Flex align="center" mb="18px">
           <FormLabel htmlFor="balance" mb="0">
             <Box boxSize="48px" borderRadius="full" overflow="hidden">
-              <Image
-                src={Usa}
-                alt="USA"
-                placeholder="blur"
-                sizes="48px"
-                priority
-              />
+              <Image src={Usa} alt="USA" sizes="48px" priority unoptimized />
             </Box>
           </FormLabel>
           <Select id="balance" variant="filled" defaultValue="usd">
@@ -132,7 +109,7 @@ export default function StatsSection() {
         </Text>
       </Flex>
 
-      {stats.slice(3).map(stat => (
+      {stats.slice(3).map((stat) => (
         <Flex key={stat.label} direction="column" {...cardStyles}>
           <IconBox
             w="56px"

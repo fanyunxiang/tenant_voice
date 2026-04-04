@@ -1,29 +1,15 @@
 'use client';
 
 import { SimpleGrid } from '@chakra-ui/react';
-import { lazyCard } from 'utils/lazyClient';
+import CheckTable from 'views/admin/default/components/CheckTable';
+import ComplexTable from 'views/admin/default/components/ComplexTable';
+import DailyTraffic from 'views/admin/default/components/DailyTraffic';
+import PieCard from 'views/admin/default/components/PieCard';
+import Tasks from 'views/admin/default/components/Tasks';
+import TotalSpent from 'views/admin/default/components/TotalSpent';
+import WeeklyRevenue from 'views/admin/default/components/WeeklyRevenue';
 import tableDataCheck from 'views/admin/default/variables/tableDataCheck';
 import tableDataComplex from 'views/admin/default/variables/tableDataComplex';
-
-const CheckTable = lazyCard(
-  () => import('views/admin/default/components/CheckTable'),
-);
-const ComplexTable = lazyCard(
-  () => import('views/admin/default/components/ComplexTable'),
-);
-const DailyTraffic = lazyCard(
-  () => import('views/admin/default/components/DailyTraffic'),
-);
-const PieCard = lazyCard(
-  () => import('views/admin/default/components/PieCard'),
-);
-const Tasks = lazyCard(() => import('views/admin/default/components/Tasks'));
-const TotalSpent = lazyCard(
-  () => import('views/admin/default/components/TotalSpent'),
-);
-const WeeklyRevenue = lazyCard(
-  () => import('views/admin/default/components/WeeklyRevenue'),
-);
 
 export default function ClientDashboard() {
   return (

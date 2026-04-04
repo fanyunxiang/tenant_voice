@@ -24,9 +24,7 @@ export default function AdminLayout(props: DashboardLayoutProps) {
   const { onOpen } = useDisclosure();
   const pathname = usePathname();
 
-  const currentRoute = routes.find((route) =>
-    pathname?.startsWith(route.layout + route.path),
-  );
+  const currentRoute = routes.find((route) => pathname?.startsWith(route.layout + route.path));
 
   useEffect(() => {
     window.document.documentElement.dir = 'ltr';
@@ -69,13 +67,7 @@ export default function AdminLayout(props: DashboardLayoutProps) {
             />
           </Box>
 
-          <Box
-            mx="auto"
-            p={{ base: '20px', md: '30px' }}
-            pe="20px"
-            minH="100vh"
-            pt="50px"
-          >
+          <Box mx="auto" p={{ base: '20px', md: '30px' }} pe="20px" minH="100vh" pt="50px">
             {children}
           </Box>
           <Box>

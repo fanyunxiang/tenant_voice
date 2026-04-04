@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import Calendar from 'react-calendar';
+import type { Value } from 'react-calendar/dist/shared/types.js';
 import { Text, Icon } from '@chakra-ui/react';
 import 'react-calendar/dist/Calendar.css';
 // Chakra imports
@@ -8,12 +9,9 @@ import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 // Custom components
 import Card from 'components/card/Card';
 
-export default function MiniCalendar(props: {
-  selectRange: boolean;
-  [x: string]: any;
-}) {
+export default function MiniCalendar(props: { selectRange: boolean; [x: string]: any }) {
   const { selectRange, ...rest } = props;
-  const [value, onChange] = useState(new Date());
+  const [value, setValue] = useState<Value>(new Date());
   return (
     <Card
       alignItems="center"
@@ -25,7 +23,7 @@ export default function MiniCalendar(props: {
       {...rest}
     >
       <Calendar
-        onChange={onChange}
+        onChange={(nextValue) => setValue(nextValue)}
         value={value}
         selectRange={selectRange}
         view={'month'}

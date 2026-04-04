@@ -12,21 +12,10 @@ type LineChartProps = BoxProps & {
   chartOptions: any;
 };
 
-const LineChart = ({
-  chartData,
-  chartOptions,
-  minH = '260px',
-  ...boxProps
-}: LineChartProps) => {
+const LineChart = ({ chartData, chartOptions, minH = '260px', ...boxProps }: LineChartProps) => {
   return (
     <LazyChartContainer minH={minH} {...boxProps}>
-      <Chart
-        options={chartOptions}
-        type="line"
-        width="100%"
-        height="100%"
-        series={chartData}
-      />
+      <Chart options={chartOptions} type="line" width="100%" height="100%" series={chartData} />
     </LazyChartContainer>
   );
 };

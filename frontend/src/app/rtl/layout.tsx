@@ -68,13 +68,7 @@ export default function RTLLayout(props: RTLLayoutProps) {
               </Box>
             </Portal>
 
-            <Box
-              mx="auto"
-              p={{ base: '20px', md: '30px' }}
-              pe="20px"
-              minH="100vh"
-              pt="50px"
-            >
+            <Box mx="auto" p={{ base: '20px', md: '30px' }} pe="20px" minH="100vh" pt="50px">
               {children}
             </Box>
             <Box>

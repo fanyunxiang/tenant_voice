@@ -19,20 +19,21 @@ const LazyChartContainer = ({
 }: PropsWithChildren<LazyChartContainerProps>) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
+  const isDocumentHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
 
   useEffect(() => {
     if (isVisible) return;
     const node = ref.current;
     if (!node) return;
 
-    if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+    if (isDocumentHidden || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
       setIsVisible(true);
       return;
     }
 
     const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(entry => {
+      (entries) => {
+        entries.forEach((entry) => {
           if (entry.isIntersecting) {
             setIsVisible(true);
             observer.disconnect();
@@ -44,7 +45,7 @@ const LazyChartContainer = ({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [rootMargin, isVisible]);
+  }, [rootMargin, isVisible, isDocumentHidden]);
 
   return (
     <Box ref={ref} minH={minH} position="relative" w="100%" {...boxProps}>
