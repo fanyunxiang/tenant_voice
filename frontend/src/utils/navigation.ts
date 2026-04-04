@@ -3,25 +3,31 @@ import { IRoute } from 'types/navigation';
 // NextJS Requirement
 export const isWindowAvailable = () => typeof window !== 'undefined';
 
-export const findCurrentRoute = (routes: IRoute[]): IRoute | undefined => {
-  if (!isWindowAvailable()) {
+export const findCurrentRoute = (
+  routes: IRoute[],
+  currentPath?: string | null,
+): IRoute | undefined => {
+  if (!currentPath && !isWindowAvailable()) {
     return undefined;
   }
 
-  const currentPath = window.location.pathname;
-  return routes.find((route) => currentPath.startsWith(route.layout + route.path));
+  const activePath = currentPath ?? window.location.pathname;
+  return routes.find((route) => activePath.startsWith(route.layout + route.path));
 };
 
-export const getActiveRoute = (routes: IRoute[]): string => {
-  const route = findCurrentRoute(routes);
+export const getActiveRoute = (routes: IRoute[], currentPath?: string | null): string => {
+  const route = findCurrentRoute(routes, currentPath);
   return route?.name || 'Default Brand Text';
 };
 
-export const getActiveNavbar = (routes: IRoute[]): boolean => {
-  const route = findCurrentRoute(routes);
-  return route?.secondary;
+export const getActiveNavbar = (routes: IRoute[], currentPath?: string | null): boolean => {
+  const route = findCurrentRoute(routes, currentPath);
+  return route?.secondary ?? false;
 };
 
-export const getActiveNavbarText = (routes: IRoute[]): string | boolean => {
-  return getActiveRoute(routes) || false;
+export const getActiveNavbarText = (
+  routes: IRoute[],
+  currentPath?: string | null,
+): string | boolean => {
+  return getActiveRoute(routes, currentPath) || false;
 };

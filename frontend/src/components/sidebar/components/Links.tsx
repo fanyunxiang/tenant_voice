@@ -1,12 +1,10 @@
 'use client';
-/* eslint-disable */
-
 // chakra imports
 import { Box, Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
 import Link from 'next/link';
 import { IRoute } from 'types/navigation';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useRef } from 'react';
 
 interface SidebarLinksProps {
   routes: IRoute[];
@@ -15,6 +13,7 @@ interface SidebarLinksProps {
 export function SidebarLinks(props: SidebarLinksProps) {
   const { routes } = props;
   const router = useRouter();
+  const prefetchedRoutesRef = useRef(new Set<string>());
 
   //   Chakra color mode
   const pathname = usePathname();
@@ -34,38 +33,40 @@ export function SidebarLinks(props: SidebarLinksProps) {
     [pathname],
   );
 
-  useEffect(() => {
-    routes.forEach((route) => {
-      if (route.layout === '/admin') {
-        router.prefetch(route.layout + route.path);
-      }
-    });
-  }, [router, routes]);
+  const prefetchOnIntent = useCallback(
+    (href: string) => {
+      if (prefetchedRoutesRef.current.has(href)) return;
+      prefetchedRoutesRef.current.add(href);
+      router.prefetch(href);
+    },
+    [router],
+  );
 
   // this function creates the links from the secondary accordions (for example auth -> sign-in -> default)
   const createLinks = (routes: IRoute[]) => {
     return routes.map((route, index: number) => {
       if (route.layout === '/admin' || route.layout === '/auth' || route.layout === '/rtl') {
+        const href = route.layout + route.path;
+        const isActive = activeRoute(route.layout, route.path);
         return (
-          <Link key={index} href={route.layout + route.path}>
+          <Link
+            key={index}
+            href={href}
+            prefetch={false}
+            onMouseEnter={() => prefetchOnIntent(href)}
+            onFocus={() => prefetchOnIntent(href)}
+          >
             {route.icon ? (
               <Box>
-                <HStack
-                  spacing={activeRoute(route.layout, route.path) ? '22px' : '26px'}
-                  py="5px"
-                  ps="10px"
-                >
+                <HStack spacing={isActive ? '22px' : '26px'} py="5px" ps="10px">
                   <Flex w="100%" alignItems="center" justifyContent="center">
-                    <Box
-                      color={activeRoute(route.layout, route.path) ? activeIcon : textColor}
-                      me="18px"
-                    >
+                    <Box color={isActive ? activeIcon : textColor} me="18px">
                       {route.icon}
                     </Box>
                     <Text
                       me="auto"
-                      color={activeRoute(route.layout, route.path) ? activeColor : textColor}
-                      fontWeight={activeRoute(route.layout, route.path) ? 'bold' : 'normal'}
+                      color={isActive ? activeColor : textColor}
+                      fontWeight={isActive ? 'bold' : 'normal'}
                     >
                       {route.name}
                     </Text>
@@ -73,22 +74,18 @@ export function SidebarLinks(props: SidebarLinksProps) {
                   <Box
                     h="36px"
                     w="4px"
-                    bg={activeRoute(route.layout, route.path) ? brandColor : 'transparent'}
+                    bg={isActive ? brandColor : 'transparent'}
                     borderRadius="5px"
                   />
                 </HStack>
               </Box>
             ) : (
               <Box>
-                <HStack
-                  spacing={activeRoute(route.layout, route.path) ? '22px' : '26px'}
-                  py="5px"
-                  ps="10px"
-                >
+                <HStack spacing={isActive ? '22px' : '26px'} py="5px" ps="10px">
                   <Text
                     me="auto"
-                    color={activeRoute(route.layout, route.path) ? activeColor : inactiveColor}
-                    fontWeight={activeRoute(route.layout, route.path) ? 'bold' : 'normal'}
+                    color={isActive ? activeColor : inactiveColor}
+                    fontWeight={isActive ? 'bold' : 'normal'}
                   >
                     {route.name}
                   </Text>

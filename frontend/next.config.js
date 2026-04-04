@@ -8,7 +8,20 @@ const nextConfig = {
   },
   outputFileTracingRoot: path.join(__dirname, '..'),
   images: {
-    domains: ['images.unsplash.com', 'i.ibb.co', 'scontent.fotp8-1.fna.fbcdn.net'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'i.ibb.co',
+      },
+      {
+        protocol: 'https',
+        hostname: 'scontent.fotp8-1.fna.fbcdn.net',
+      },
+    ],
     // Make ENV
     unoptimized: true,
   },

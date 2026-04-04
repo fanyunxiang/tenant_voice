@@ -19,7 +19,7 @@
     "@testing-library/user-event": "^12.8.3",
     "apexcharts": "^5.3.5",
     "framer-motion": "^12.38.0",
-    "next": "15.5.14",
+    "next": "16.2.2",
     "react": "19.2.4",
     "react-apexcharts": "^2.0.0",
     "react-calendar": "^6.0.0",
@@ -38,7 +38,8 @@
     "build": "next build",
     "build:clean": "rm -rf .next && pnpm build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "format": "prettier --cache --write .",
     "format:check": "prettier --check .",
     "predeploy": "yarn run build",
@@ -63,7 +64,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/react-table": "^7.7.12",
     "eslint": "^9.0.0",
-    "eslint-config-next": "15.5.14",
+    "eslint-config-next": "16.2.2",
     "prettier": "^3.3.3",
     "typescript": "^5.9.3"
   }

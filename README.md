@@ -4,10 +4,11 @@ TenantVoice is a tenant-experience platform that pairs a React/Next.js front end
 
 ## Tech Stack
 
-- **Frontend:** Next.js 15 (App Router) + React 19 RC, Chakra UI, ApexCharts, pnpm
-- **Backend:** Supabase client SDK, Zod validation, custom service layer written in TypeScript
+- **Frontend:** Next.js 16.2.2 (App Router) + React 19.2.4, Chakra UI 2.6.1, ApexCharts 5.3.5, Framer Motion 12.38.0
+- **Backend:** Supabase JS 2.45.0, Zod 4.3.6, custom service layer in TypeScript 5.4.x
 - **Database:** Supabase-managed PostgreSQL (single source of truth for tenant + notification data)
-- **Deployment:** Vercel (frontend) + Supabase (database + managed auth) with room for serverless functions or cron jobs
+- **Tooling:** pnpm 8.15.4 workspaces, ESLint 9, Prettier 3
+- **Deployment:** Vercel (frontend) + Supabase (database + managed auth), with room for serverless functions or cron jobs
 
 ## Repository Structure
 

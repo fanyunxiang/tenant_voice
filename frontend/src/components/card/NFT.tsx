@@ -1,6 +1,5 @@
 'use client';
 // Chakra imports
-'use client';
 import {
   AvatarGroup,
   Avatar,

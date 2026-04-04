@@ -38,7 +38,7 @@ const tableColumnsTopCreators: RowObj[] = [
     rating: 68,
   },
   {
-    name: ['@simmmple.web', 'https://i.ibb.co/7p0d1Cd/Frame-24.png'],
+    name: ['@tenantvoice.web', 'https://i.ibb.co/7p0d1Cd/Frame-24.png'],
     artworks: 3871,
     rating: 55,
   },

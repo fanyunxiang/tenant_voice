@@ -1,6 +1,4 @@
 // @ts-nocheck
-/* eslint-disable */
-
 import { createIcon } from '@chakra-ui/icons';
 
 export const AdobexdLogo = createIcon({

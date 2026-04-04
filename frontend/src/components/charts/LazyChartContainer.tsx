@@ -14,19 +14,23 @@ type LazyChartContainerProps = BoxProps & {
 const LazyChartContainer = ({
   children,
   minH = '260px',
-  rootMargin = '200px',
+  rootMargin = '0px',
   ...boxProps
 }: PropsWithChildren<LazyChartContainerProps>) => {
   const ref = useRef<HTMLDivElement | null>(null);
   const [isVisible, setIsVisible] = useState(false);
-  const isDocumentHidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
 
   useEffect(() => {
     if (isVisible) return;
     const node = ref.current;
     if (!node) return;
-
-    if (isDocumentHidden || typeof window === 'undefined' || !('IntersectionObserver' in window)) {
+    if (
+      typeof window === 'undefined' ||
+      document.visibilityState === 'hidden' ||
+      !('IntersectionObserver' in window)
+    ) {
+      // We intentionally reveal content post-hydration when observer APIs are unavailable.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsVisible(true);
       return;
     }
@@ -45,7 +49,7 @@ const LazyChartContainer = ({
 
     observer.observe(node);
     return () => observer.disconnect();
-  }, [rootMargin, isVisible, isDocumentHidden]);
+  }, [rootMargin, isVisible]);
 
   return (
     <Box ref={ref} minH={minH} position="relative" w="100%" {...boxProps}>

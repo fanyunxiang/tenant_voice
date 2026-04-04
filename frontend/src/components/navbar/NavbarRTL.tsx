@@ -1,4 +1,3 @@
-/* eslint-disable */
 // Chakra Imports
 import {
   Box,
@@ -7,12 +6,9 @@ import {
   BreadcrumbLink,
   Flex,
   Link,
-  Text,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { useState, useEffect } from 'react';
 import AdminNavbarLinks from 'components/navbar/NavbarLinksAdmin';
-import { isWindowAvailable } from 'utils/navigation';
 
 export default function AdminNavbar(props: {
   secondary: boolean;
@@ -20,21 +16,9 @@ export default function AdminNavbar(props: {
   brandText: string;
   logoText: string;
   fixed: boolean;
-  onOpen: (...args: any[]) => any;
+  onOpen: () => void;
 }) {
-  const [scrolled, setScrolled] = useState(false);
-
-  useEffect(() => {
-    if (isWindowAvailable()) {
-      window.addEventListener('scroll', changeNavbar);
-
-      return () => {
-        window.removeEventListener('scroll', changeNavbar);
-      };
-    }
-  });
-
-  const { secondary, message, brandText, fixed } = props;
+  const { secondary, brandText, fixed } = props;
 
   // Here are all the props that may change depending on navbar's type or state.(secondary, variant, scrolled)
   let mainText = useColorModeValue('navy.700', 'white');
@@ -48,13 +32,6 @@ export default function AdminNavbar(props: {
   let secondaryMargin = '0px';
   let paddingX = '15px';
   let gap = '0px';
-  const changeNavbar = () => {
-    if (isWindowAvailable() && window.scrollY > 1) {
-      setScrolled(true);
-    } else {
-      setScrolled(false);
-    }
-  };
 
   return (
     <Box

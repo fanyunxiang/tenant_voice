@@ -1,5 +1,3 @@
-'use client';
-
 import { Box, Flex, FormLabel, Icon, Select, SimpleGrid, Text } from '@chakra-ui/react';
 import IconBox from 'components/icons/IconBox';
 import { MdAddTask, MdAttachMoney, MdBarChart, MdFileCopy } from 'react-icons/md';
