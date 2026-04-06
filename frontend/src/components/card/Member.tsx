@@ -1,5 +1,5 @@
 // Chakra imports
-import { Avatar, Flex, useColorModeValue, Icon, Text } from '@chakra-ui/react';
+import { Avatar, Flex, useColorModeValue, Icon, Text } from 'lib/chakra';
 // Custom components
 import Card from 'components/card/Card';
 import TransparentMenu from 'components/menu/TransparentMenu';

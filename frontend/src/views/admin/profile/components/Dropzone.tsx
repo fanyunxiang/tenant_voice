@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 // Chakra imports
-import { Button, Flex, useColorModeValue } from '@chakra-ui/react';
+import { Button, Flex, useColorModeValue } from 'lib/chakra';
 // Assets
 import { useDropzone } from 'react-dropzone';
 

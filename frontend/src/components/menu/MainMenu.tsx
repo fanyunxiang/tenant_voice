@@ -11,7 +11,7 @@ import {
   MenuList,
   useDisclosure,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Assets
 import {
   MdOutlineMoreHoriz,

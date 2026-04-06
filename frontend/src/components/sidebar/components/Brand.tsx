@@ -1,5 +1,5 @@
 // Chakra imports
-import { Flex, Text, useColorModeValue } from '@chakra-ui/react';
+import { Flex, Text, useColorModeValue } from 'lib/chakra';
 
 // Custom components
 // import { TenantVoiceLogo } from 'components/icons/Icons';

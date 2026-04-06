@@ -2,7 +2,7 @@
 import { PropsWithChildren, useEffect } from 'react';
 
 // Chakra imports
-import { Box, useColorModeValue } from '@chakra-ui/react';
+import { Box, useColorModeValue } from 'lib/chakra';
 
 // Custom Chakra theme
 

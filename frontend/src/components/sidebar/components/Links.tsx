@@ -1,6 +1,6 @@
 'use client';
 // chakra imports
-import { Box, Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, HStack, Text, useColorModeValue } from 'lib/chakra';
 import Link from 'next/link';
 import { IRoute } from 'types/navigation';
 import { usePathname, useRouter } from 'next/navigation';

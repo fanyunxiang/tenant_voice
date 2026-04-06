@@ -11,7 +11,7 @@ import {
   Text,
   useColorModeValue,
   AspectRatio,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Custom components
 import Card from 'components/card/Card';
 // Assets
@@ -26,8 +26,9 @@ export default function NFT(props: {
   bidders: string[] | any[];
   download: string;
   currentbid: string | number;
+  priority?: boolean;
 }) {
-  const { image, name, author, bidders, download, currentbid } = props;
+  const { image, name, author, bidders, download, currentbid, priority = false } = props;
   const [like, setLike] = useState(false);
   const textColor = useColorModeValue('navy.700', 'white');
   const textColorBid = useColorModeValue('brand.500', 'white');
@@ -47,6 +48,7 @@ export default function NFT(props: {
                 alt={name}
                 fill
                 sizes="(min-width: 62em) 280px, 100vw"
+                priority={priority}
                 unoptimized
               />
             </Box>

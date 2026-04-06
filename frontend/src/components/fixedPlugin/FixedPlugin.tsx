@@ -1,5 +1,5 @@
 // Chakra Imports
-import { Button, Icon, useColorMode } from '@chakra-ui/react';
+import { Button, Icon, useColorMode } from 'lib/chakra';
 // Custom Icons
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import React from 'react';

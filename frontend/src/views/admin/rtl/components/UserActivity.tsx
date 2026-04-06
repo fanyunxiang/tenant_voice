@@ -1,5 +1,5 @@
 // Chakra imports
-import { Box, Flex, Select, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Select, Text, useColorModeValue } from 'lib/chakra';
 import { ApexOptions } from 'apexcharts';
 import Card from 'components/card/Card';
 // Custom components

@@ -7,7 +7,7 @@ import {
   Flex,
   Link,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 import AdminNavbarLinks from 'components/navbar/NavbarLinksAdmin';
 
 export default function AdminNavbar(props: {

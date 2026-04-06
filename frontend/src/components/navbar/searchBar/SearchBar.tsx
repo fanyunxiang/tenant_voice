@@ -5,8 +5,8 @@ import {
   InputGroup,
   InputLeftElement,
   useColorModeValue,
-} from '@chakra-ui/react';
-import { SearchIcon } from '@chakra-ui/icons';
+} from 'lib/chakra';
+import { LuSearch } from 'react-icons/lu';
 export function SearchBar(props: {
   variant?: string;
   background?: string;
@@ -36,7 +36,7 @@ export function SearchBar(props: {
           _focus={{
             boxShadow: 'none',
           }}
-          icon={<SearchIcon color={searchIconColor} w="15px" h="15px" />}
+          icon={<LuSearch color={searchIconColor} size={15} />}
         />
       </InputLeftElement>
 

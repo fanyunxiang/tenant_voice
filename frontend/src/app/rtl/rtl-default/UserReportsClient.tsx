@@ -6,7 +6,7 @@
  */
 
 // Chakra imports
-import { Avatar, Box, Flex, Icon, Select, SimpleGrid, useColorModeValue } from '@chakra-ui/react';
+import { Avatar, Box, Flex, Icon, Select, SimpleGrid, useColorModeValue } from 'lib/chakra';
 // Assets
 import Usa from 'img/dashboards/usa.png';
 // Custom components

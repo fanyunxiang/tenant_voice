@@ -1,6 +1,6 @@
 'use client';
 
-import { SimpleGrid } from '@chakra-ui/react';
+import { SimpleGrid } from 'lib/chakra';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import LazyCardSkeleton from 'components/lazy/LazyCardSkeleton';

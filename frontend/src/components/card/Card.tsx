@@ -1,12 +1,28 @@
-// import { Box, useStyleConfig} from '@chakra-ui/react';
-
-import { useStyleConfig, chakra, forwardRef } from '@chakra-ui/react';
+import React from 'react';
+import { chakra } from 'lib/chakra';
 import { CustomCardProps } from 'theme/theme';
-const CustomCard = forwardRef<CustomCardProps, 'div'>((props, ref) => {
-  const { size, variant, ...rest } = props;
-  const styles = useStyleConfig('Card', { size, variant });
 
-  return <chakra.div ref={ref} __css={styles} {...rest} />;
+const baseCardStyles = {
+  p: '20px',
+  display: 'flex',
+  flexDirection: 'column',
+  width: '100%',
+  position: 'relative',
+  borderRadius: '20px',
+  minWidth: '0px',
+  wordWrap: 'break-word',
+  bg: '#ffffff',
+  _dark: {
+    bg: 'navy.800',
+  },
+  backgroundClip: 'border-box',
+};
+
+const CustomCard = React.forwardRef<HTMLDivElement, CustomCardProps>((props, ref) => {
+  const { size, variant, ...rest } = props;
+  return <chakra.div ref={ref} css={baseCardStyles} {...rest} />;
 });
+
+CustomCard.displayName = 'CustomCard';
 
 export default CustomCard;

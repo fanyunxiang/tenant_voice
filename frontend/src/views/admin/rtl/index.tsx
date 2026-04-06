@@ -14,7 +14,7 @@ import {
   Select,
   SimpleGrid,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Assets
 import Usa from 'img/dashboards/usa.png';
 // Custom components

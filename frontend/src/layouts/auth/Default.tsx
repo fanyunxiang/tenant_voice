@@ -1,5 +1,5 @@
 // Chakra imports
-import { Box, Flex, Icon, useColorModeValue, Text } from '@chakra-ui/react';
+import { Box, Flex, Icon, useColorModeValue, Text } from 'lib/chakra';
 import Footer from 'components/footer/FooterAuth';
 import FixedPlugin from 'components/fixedPlugin/FixedPlugin';
 // Assets

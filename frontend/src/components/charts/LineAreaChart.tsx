@@ -1,5 +1,5 @@
 'use client';
-import { BoxProps } from '@chakra-ui/react';
+import { BoxProps } from 'lib/chakra';
 import dynamic from 'next/dynamic';
 import LazyChartContainer from './LazyChartContainer';
 

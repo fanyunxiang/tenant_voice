@@ -11,7 +11,7 @@ import {
   Thead,
   Tr,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 import * as React from 'react';
 
 import {

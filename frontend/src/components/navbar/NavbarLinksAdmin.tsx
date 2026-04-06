@@ -15,7 +15,7 @@ import {
   Text,
   useColorMode,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Custom Components
 import { ItemContent } from 'components/menu/ItemContent';
 // import { SearchBar } from 'components/navbar/searchBar/SearchBar';

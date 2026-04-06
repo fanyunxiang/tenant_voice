@@ -1,4 +1,4 @@
-import { Flex } from '@chakra-ui/react';
+import { Flex } from 'lib/chakra';
 import React from 'react';
 
 const HSeparator = (props: { variant?: string; [x: string]: any }) => {

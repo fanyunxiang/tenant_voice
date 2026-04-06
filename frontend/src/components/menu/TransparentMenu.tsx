@@ -11,7 +11,7 @@ import {
   Flex,
   Icon,
   Text,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Assets
 import {
   MdOutlinePerson,

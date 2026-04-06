@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, SimpleGrid } from '@chakra-ui/react';
+import { Box, SimpleGrid } from 'lib/chakra';
 import CheckTable from 'views/admin/dataTables/components/CheckTable';
 import ColumnsTable from 'views/admin/dataTables/components/ColumnsTable';
 import ComplexTable from 'views/admin/dataTables/components/ComplexTable';
@@ -13,7 +13,7 @@ import tableDataComplex from 'views/admin/dataTables/variables/tableDataComplex'
 export default function DataTablesPage() {
   return (
     <Box pt={{ base: '130px', md: '80px', xl: '80px' }}>
-      <SimpleGrid mb="20px" columns={{ sm: 1, md: 2 }} spacing={{ base: '20px', xl: '20px' }}>
+      <SimpleGrid mb="20px" columns={{ sm: 1, md: 2 }} gap={{ base: '20px', xl: '20px' }}>
         <DevelopmentTable tableData={tableDataDevelopment} />
         <CheckTable tableData={tableDataCheck} />
         <ColumnsTable tableData={tableDataColumns} />

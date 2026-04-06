@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, BoxProps, Skeleton } from '@chakra-ui/react';
+import { Box, BoxProps, Skeleton } from 'lib/chakra';
 import { PropsWithChildren, useEffect, useRef, useState } from 'react';
 
 type LazyChartContainerProps = BoxProps & {

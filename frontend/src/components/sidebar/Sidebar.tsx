@@ -12,7 +12,7 @@ import {
   useDisclosure,
   DrawerContent,
   DrawerCloseButton,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 import Content from 'components/sidebar/components/Content';
 
 // Assets

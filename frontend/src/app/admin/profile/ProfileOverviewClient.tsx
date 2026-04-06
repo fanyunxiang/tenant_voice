@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Grid } from '@chakra-ui/react';
+import { Box, Grid } from 'lib/chakra';
 import banner from 'img/auth/banner.png';
 import avatar from 'img/avatars/avatar4.png';
 import Banner from 'views/admin/profile/components/Banner';

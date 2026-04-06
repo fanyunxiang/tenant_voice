@@ -1,4 +1,4 @@
-import { mode, StyleConfig, StyleFunctionProps } from '@chakra-ui/theme-tools';
+import { mode, StyleConfig, StyleFunctionProps } from 'theme/utils';
 export const badgeStyles: { components: { Badge: StyleConfig } } = {
   components: {
     Badge: {

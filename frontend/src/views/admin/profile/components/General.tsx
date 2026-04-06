@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
+import { SimpleGrid, Text, useColorModeValue } from 'lib/chakra';
 // Custom components
 import Card from 'components/card/Card';
 import Information from 'views/admin/profile/components/Information';

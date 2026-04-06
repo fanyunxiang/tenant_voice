@@ -12,7 +12,7 @@ import {
   Thead,
   Tr,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 import {
   createColumnHelper,
   flexRender,

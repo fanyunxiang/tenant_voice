@@ -17,7 +17,7 @@ import {
   useColorModeValue,
   SimpleGrid,
   Link,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 
 // Custom components
 import TableTopCreators from 'views/admin/marketplace/components/TableTopCreators';
@@ -107,6 +107,7 @@ export default function NftMarketplace() {
                 image={Nft1}
                 currentbid="0.91 ETH"
                 download="#"
+                priority
               />
               <NFT
                 name="ETH AI Brain"

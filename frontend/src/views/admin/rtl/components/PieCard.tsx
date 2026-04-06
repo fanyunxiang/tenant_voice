@@ -1,5 +1,5 @@
 // Chakra imports
-import { Box, Flex, Text, Select, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Text, Select, useColorModeValue } from 'lib/chakra';
 // Custom components
 import Card from 'components/card/Card';
 import PieChart from 'components/charts/PieChart';

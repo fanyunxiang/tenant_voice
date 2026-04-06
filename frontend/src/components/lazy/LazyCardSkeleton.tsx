@@ -1,4 +1,4 @@
-import { Box, Skeleton, SkeletonText } from '@chakra-ui/react';
+import { Box, Skeleton, SkeletonText } from 'lib/chakra';
 
 const LazyCardSkeleton = () => (
   <Box

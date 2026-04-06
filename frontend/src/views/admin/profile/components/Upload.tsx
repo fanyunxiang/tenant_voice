@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Box, Button, Flex, Icon, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Button, Flex, Icon, Text, useColorModeValue } from 'lib/chakra';
 // Custom components
 import Card from 'components/card/Card';
 // Assets

@@ -1,4 +1,4 @@
-import { Box, Flex, FormLabel, Icon, Select, SimpleGrid, Text } from '@chakra-ui/react';
+import { Box, Flex, FormLabel, Icon, Select, SimpleGrid, Text } from 'lib/chakra';
 import IconBox from 'components/icons/IconBox';
 import { MdAddTask, MdAttachMoney, MdBarChart, MdFileCopy } from 'react-icons/md';
 import Image from 'next/image';

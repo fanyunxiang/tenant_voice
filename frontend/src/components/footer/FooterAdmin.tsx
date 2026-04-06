@@ -1,4 +1,4 @@
-import { Flex, Link, List, ListItem, Text, useColorModeValue } from '@chakra-ui/react';
+import { Flex, Link, List, ListItem, Text, useColorModeValue } from 'lib/chakra';
 
 export default function Footer() {
   const textColor = useColorModeValue('gray.400', 'white');

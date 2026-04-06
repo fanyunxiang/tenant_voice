@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Box, Flex, Icon, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, Icon, Text, useColorModeValue } from 'lib/chakra';
 import BarChart from 'components/charts/BarChart';
 
 // Custom components

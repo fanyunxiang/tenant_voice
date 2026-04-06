@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
+import { Box, useDisclosure, useColorModeValue } from 'lib/chakra';
 import Footer from 'components/footer/FooterAdmin';
 // Layout components
 import Navbar from 'components/navbar/NavbarAdmin';

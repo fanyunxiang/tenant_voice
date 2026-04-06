@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Text, useColorModeValue } from '@chakra-ui/react';
+import { Text, useColorModeValue } from 'lib/chakra';
 // Assets
 import Project1 from 'img/profile/Project1.png';
 import Project2 from 'img/profile/Project2.png';

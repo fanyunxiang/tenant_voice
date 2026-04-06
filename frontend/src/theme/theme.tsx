@@ -1,34 +1,62 @@
-import { extendTheme, HTMLChakraProps, ThemingProps } from '@chakra-ui/react';
-import { CardComponent } from './additions/card/card';
-import { buttonStyles } from './components/button';
-import { badgeStyles } from './components/badge';
-import { inputStyles } from './components/input';
-import { progressStyles } from './components/progress';
-import { sliderStyles } from './components/slider';
-import { textareaStyles } from './components/textarea';
-import { switchStyles } from './components/switch';
-import { linkStyles } from './components/link';
+import { createSystem, defaultConfig, defineConfig } from 'lib/chakra';
+import type { BoxProps } from 'lib/chakra';
 import { breakpoints } from './foundations/breakpoints';
 import { globalStyles, systemFontStack } from './styles';
 
-export default extendTheme(
-  {
-    breakpoints,
-    fonts: {
-      heading: systemFontStack,
-      body: systemFontStack,
-    },
-  }, // Breakpoints + fonts
-  globalStyles,
-  badgeStyles, // badge styles
-  buttonStyles, // button styles
-  linkStyles, // link styles
-  progressStyles, // progress styles
-  sliderStyles, // slider styles
-  inputStyles, // input styles
-  textareaStyles, // textarea styles
-  switchStyles, // switch styles
-  CardComponent, // card component
-);
+const toTokenSchema = (value: unknown): any => {
+  if (value === null || value === undefined) {
+    return value;
+  }
 
-export interface CustomCardProps extends HTMLChakraProps<'div'>, ThemingProps {}
+  if (typeof value === 'string' || typeof value === 'number') {
+    return { value };
+  }
+
+  if (typeof value === 'object' && !Array.isArray(value)) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, nestedValue]) => [key, toTokenSchema(nestedValue)]),
+    );
+  }
+
+  return value;
+};
+
+const config = defineConfig({
+  theme: {
+    breakpoints,
+    tokens: {
+      colors: toTokenSchema(globalStyles.colors),
+      fonts: toTokenSchema({
+        heading: systemFontStack,
+        body: systemFontStack,
+      }),
+    },
+  },
+  globalCss: {
+    body: {
+      overflowX: 'hidden',
+      bg: 'secondaryGray.300',
+      _dark: {
+        bg: 'navy.900',
+      },
+      fontFamily: '$fonts.body',
+      letterSpacing: '-0.5px',
+    },
+    input: {
+      color: 'gray.700',
+    },
+    html: {
+      fontFamily: '$fonts.body',
+    },
+  },
+});
+
+const system = createSystem(defaultConfig, config);
+
+export default system;
+
+export interface CustomCardProps extends BoxProps {
+  size?: string;
+  variant?: string;
+  [key: string]: any;
+}

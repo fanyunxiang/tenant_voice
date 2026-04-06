@@ -21,7 +21,7 @@ import {
   InputRightElement,
   Text,
   useColorModeValue,
-} from '@chakra-ui/react';
+} from 'lib/chakra';
 // Custom components
 import { HSeparator } from 'components/separator/Separator';
 import DefaultAuthLayout from 'layouts/auth/Default';

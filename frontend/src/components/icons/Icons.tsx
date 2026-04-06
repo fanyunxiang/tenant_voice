@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { createIcon } from '@chakra-ui/icons';
+import { createIcon } from 'lib/chakra';
 
 export const AdobexdLogo = createIcon({
   displayName: 'AdobexdLogo',

@@ -1,5 +1,5 @@
 // chakra imports
-import { Icon, Flex, Text, useColorModeValue } from '@chakra-ui/react';
+import { Icon, Flex, Text, useColorModeValue } from 'lib/chakra';
 import { MdUpgrade } from 'react-icons/md';
 
 export function ItemContent(props: { info: string }) {

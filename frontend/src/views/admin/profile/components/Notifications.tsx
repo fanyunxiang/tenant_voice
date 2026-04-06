@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Flex, Text, useColorModeValue } from '@chakra-ui/react';
+import { Flex, Text, useColorModeValue } from 'lib/chakra';
 import Card from 'components/card/Card';
 // Custom components
 import SwitchField from 'components/fields/SwitchField';
