@@ -28,7 +28,7 @@ TenantVoice is a tenant-experience platform that pairs a React/Next.js front end
 | --- | --- |
 | Entry point | `frontend/src/app` (Next.js App Router) |
 | UI system | Chakra UI theme in `frontend/src/theme` + reusable cards/views |
-| Data layer | Ready to call Supabase or custom APIs via `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_API_URL` |
+| Data layer | Supabase clients in `frontend/src/lib/supabase` + custom APIs via `NEXT_PUBLIC_API_URL` |
 | Scripts | `pnpm dev`, `pnpm build`, `pnpm start`, `pnpm lint` |
 
 #### Getting started
@@ -60,10 +60,20 @@ pnpm --filter tenantvoice-backend build       # emits dist/ for serverless jobs 
 
 | Location | File | Required Keys |
 | --- | --- | --- |
-| Frontend | `frontend/.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_API_URL` |
-| Backend | `backend/.env` | `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, optional `SUPABASE_ANON_KEY`, `POSTGRES_CONNECTION_STRING` |
+| Frontend | `frontend/.env.local` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`), optional `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_API_URL` |
+| Backend | `backend/.env` | `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_KEY`), optional `SUPABASE_ANON_KEY`, `POSTGRES_CONNECTION_STRING` |
 
 > The backend uses the Supabase **service role** key for privileged operations (marking notifications as read, inserting events). Never expose that key to the browser.
+
+### Supabase Connection Check
+
+After setting env vars and starting the frontend (`pnpm --filter tenantvoice dev`), verify connection:
+
+```bash
+curl http://localhost:3000/api/supabase/ping
+```
+
+You should see `{ "ok": true, ... }` when URL + key are valid.
 
 ## Recommended Workflow
 

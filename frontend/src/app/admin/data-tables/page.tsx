@@ -1,5 +1,5 @@
-import DataTablesClient from './DataTablesClient';
+import { redirect } from 'next/navigation';
 
 export default function DataTablesPage() {
-  return <DataTablesClient />;
+  redirect('/admin/applications');
 }

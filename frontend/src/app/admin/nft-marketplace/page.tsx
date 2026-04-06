@@ -1,5 +1,5 @@
-import NftMarketplaceClient from './NftMarketplaceClient';
+import { redirect } from 'next/navigation';
 
 export default function NftMarketplacePage() {
-  return <NftMarketplaceClient />;
+  redirect('/admin/listings');
 }
