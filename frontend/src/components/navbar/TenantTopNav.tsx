@@ -1,16 +1,18 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Box, Button, Flex, Icon, Link, useColorMode, useColorModeValue } from 'lib/chakra';
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
-import { MdNotificationsNone } from 'react-icons/md';
+import { loadSession, SessionUser } from 'lib/auth/client';
 import { defaultUserRole, roleMenus } from 'variables/roleMenus';
 
 export default function TenantTopNav() {
   const pathname = usePathname();
   const { colorMode, toggleColorMode } = useColorMode();
   const menuItems = roleMenus[defaultUserRole];
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
 
   const navBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('secondaryGray.400', 'whiteAlpha.100');
@@ -20,6 +22,50 @@ export default function TenantTopNav() {
   const itemActiveBg = useColorModeValue('brand.100', 'whiteAlpha.100');
   const itemHoverBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
   const avatarBg = useColorModeValue('brand.500', 'brand.300');
+  const signInBg = useColorModeValue('brand.500', 'brand.300');
+  const signInHoverBg = useColorModeValue('brand.600', 'brand.400');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncSession = async () => {
+      try {
+        const result = await loadSession();
+        if (cancelled) {
+          return;
+        }
+
+        setSessionUser(result.ok && result.user ? result.user : null);
+      } catch {
+        if (!cancelled) {
+          setSessionUser(null);
+        }
+      }
+    };
+
+    syncSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const avatarInitials = useMemo(() => {
+    if (!sessionUser) {
+      return 'TV';
+    }
+
+    const fullName = sessionUser.full_name?.trim();
+    if (fullName) {
+      const words = fullName.split(/\s+/).filter(Boolean);
+      if (words.length >= 2) {
+        return `${words[0][0]}${words[1][0]}`.toUpperCase();
+      }
+      return fullName.slice(0, 2).toUpperCase();
+    }
+
+    return sessionUser.email.slice(0, 2).toUpperCase();
+  }, [sessionUser]);
 
   return (
     <Box
@@ -127,35 +173,43 @@ export default function TenantTopNav() {
           <Icon as={colorMode === 'light' ? IoMdMoon : IoMdSunny} boxSize="18px" />
         </Button>
 
-        <Button
-          variant="ghost"
-          minW="36px"
-          h="36px"
-          p="0"
-          borderRadius="50%"
-          aria-label="Notifications"
-          _hover={{ bg: itemHoverBg }}
-          _active={{ bg: 'transparent' }}
-          _focusVisible={{ outline: 'none', boxShadow: 'none', borderColor: 'transparent' }}
-        >
-          <Icon as={MdNotificationsNone} boxSize="18px" />
-        </Button>
-
-        <Flex
-          w="36px"
-          h="36px"
-          borderRadius="50%"
-          align="center"
-          justify="center"
-          bg={avatarBg}
-          color="white"
-          fontSize="xs"
-          fontWeight="700"
-          flexShrink={0}
-          title="Tenant"
-        >
-          TN
-        </Flex>
+        {sessionUser ? (
+          <Link
+            as={NextLink}
+            href="/admin/profile"
+            w="36px"
+            h="36px"
+            borderRadius="50%"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            bg={avatarBg}
+            color="white"
+            fontSize="xs"
+            fontWeight="700"
+            flexShrink={0}
+            title={sessionUser.full_name || sessionUser.email}
+            transition="transform 0.16s ease"
+            _hover={{ textDecoration: 'none', transform: 'translateY(-1px)' }}
+          >
+            {avatarInitials}
+          </Link>
+        ) : (
+          <Button
+            as={NextLink}
+            href="/auth/sign-in"
+            size="sm"
+            borderRadius="12px"
+            px="14px"
+            h="36px"
+            bg={signInBg}
+            color="white"
+            _hover={{ bg: signInHoverBg }}
+            _active={{ bg: signInHoverBg }}
+          >
+            Sign In
+          </Button>
+        )}
       </Flex>
     </Box>
   );

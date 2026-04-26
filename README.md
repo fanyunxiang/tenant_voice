@@ -93,6 +93,32 @@ You should see `{ "ok": true, ... }` when URL + key are valid.
 - Run `pnpm lint` in `frontend` to apply ESLint + Next.js rules.
 - Backend logic stays type-safe via `pnpm typecheck`. Add domain-specific tests (Vitest/Jest) as the service layer grows.
 
+## Auth API (Supabase)
+
+The frontend auth APIs are grouped by module under `frontend/src/app/api/auth`:
+
+- **account**
+  - `POST /api/auth/account/register` (roles: `tenant`, `landlord`, `maintenance_worker`)
+- **verification**
+  - `POST /api/auth/verification` (verify OTP code)
+  - `PATCH /api/auth/verification` (resend OTP code)
+- **session**
+  - `POST /api/auth/session` (login)
+  - `GET /api/auth/session` (current authenticated user)
+  - `DELETE /api/auth/session` (logout)
+
+Auth UI routes:
+
+- `/auth/register` (registration + email code verification)
+- `/auth/sign-in` (login)
+
+Supabase email verification is handled with signup OTP codes. In the Supabase dashboard, keep the signup confirmation email template code-based by using `{{ .Token }}` for the verification code and avoid sending users through `{{ .ConfirmationURL }}` as the primary action.
+
+Navigation guard:
+
+- Middleware redirects unauthenticated `/`, `/admin/*`, and `/rtl/*` requests to `/auth/register`.
+- Middleware redirects authenticated `/auth/*` requests to `/admin/listings`.
+
 ## Documentation & Requirements
 
 Original scope and feature details live in `docs/TenantVoice Project Scope.docx` and `docs/App Features - TenantVoice.docx`. Update those documents alongside any major product decision so the repo stays aligned with stakeholder expectations.

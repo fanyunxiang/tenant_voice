@@ -1,191 +1,196 @@
 'use client';
-/**
- * TenantVoice Dashboard
- * Copyright 2022-2026 TenantVoice (https://tenantvoice.app)
- * Designed and coded by Yunxiang Fan
- */
 
-import React from 'react';
-// Chakra imports
-import {
-  Box,
-  Button,
-  Checkbox,
-  Flex,
-  FormControl,
-  FormLabel,
-  Heading,
-  Icon,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Text,
-  useColorModeValue,
-} from 'lib/chakra';
-// Custom components
-import { HSeparator } from 'components/separator/Separator';
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { Box, Button, Flex, FormControl, FormLabel, Heading, Input, Text, useColorModeValue } from 'lib/chakra';
 import DefaultAuthLayout from 'layouts/auth/Default';
-// Assets
 import Link from 'next/link';
-import { FcGoogle } from 'react-icons/fc';
-import { MdOutlineRemoveRedEye } from 'react-icons/md';
-import { RiEyeCloseLine } from 'react-icons/ri';
+import { useRouter } from 'next/navigation';
+import { APP_DEFAULT_PATH } from 'lib/auth/constants';
+import { login } from 'lib/auth/client';
+import { useGlobalNotice } from 'components/feedback/GlobalNoticeProvider';
 
-export default function SignIn() {
-  // Chakra color mode
+type SignInClientProps = {
+  nextPath?: string;
+};
+
+const NAVIGATION_FALLBACK_RESET_MS = 5000;
+
+export default function SignInClient({ nextPath }: SignInClientProps) {
+  const router = useRouter();
+  const redirectTarget = useMemo(() => nextPath || APP_DEFAULT_PATH, [nextPath]);
+  const { showNotice } = useGlobalNotice();
+  const navigationResetTimerRef = useRef<number | null>(null);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const textColor = useColorModeValue('navy.700', 'white');
-  const textColorSecondary = 'gray.400';
+  const textColorSecondary = useColorModeValue('secondaryGray.600', 'secondaryGray.400');
   const textColorDetails = useColorModeValue('navy.700', 'secondaryGray.600');
   const textColorBrand = useColorModeValue('brand.500', 'white');
-  const brandStars = useColorModeValue('brand.500', 'brand.400');
-  const googleBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.200');
-  const googleText = useColorModeValue('navy.700', 'white');
-  const googleHover = useColorModeValue({ bg: 'gray.200' }, { bg: 'whiteAlpha.300' });
-  const googleActive = useColorModeValue({ bg: 'secondaryGray.300' }, { bg: 'whiteAlpha.200' });
-  const [show, setShow] = React.useState(false);
-  const handleClick = () => setShow(!show);
+  const requiredColor = useColorModeValue('red.500', 'red.300');
+  const inputBg = useColorModeValue('white', 'navy.800');
+  const inputBorder = useColorModeValue('secondaryGray.300', 'whiteAlpha.300');
+  const inputPlaceholder = useColorModeValue('secondaryGray.500', 'secondaryGray.400');
+  const inputFocusBorder = useColorModeValue('brand.500', 'brand.300');
+  const cardBg = useColorModeValue('white', 'navy.900');
+  const cardBorder = useColorModeValue('secondaryGray.300', 'whiteAlpha.200');
+  const primaryButtonBg = useColorModeValue('brand.500', 'brand.300');
+  const primaryButtonHoverBg = useColorModeValue('brand.600', 'brand.400');
+
+  useEffect(() => {
+    return () => {
+      if (navigationResetTimerRef.current) {
+        window.clearTimeout(navigationResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const replaceWithFallback = () => {
+    if (navigationResetTimerRef.current) {
+      window.clearTimeout(navigationResetTimerRef.current);
+    }
+
+    router.replace(redirectTarget);
+    navigationResetTimerRef.current = window.setTimeout(() => {
+      setIsSubmitting(false);
+      navigationResetTimerRef.current = null;
+    }, NAVIGATION_FALLBACK_RESET_MS);
+  };
+
+  const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      await login({ email, password });
+      showNotice({ type: 'success', message: 'Signed in successfully. Redirecting...' });
+      replaceWithFallback();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to sign in.';
+      showNotice({ type: 'error', message });
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <DefaultAuthLayout illustrationBackground={'/img/auth/auth.png'}>
+    <DefaultAuthLayout>
       <Flex
-        maxW={{ base: '100%', md: 'max-content' }}
+        maxW={{ base: '100%', md: '460px' }}
         w="100%"
         mx={{ base: 'auto', lg: '0px' }}
         me="auto"
         h="100%"
         alignItems="start"
         justifyContent="center"
-        mb={{ base: '30px', md: '60px' }}
-        px={{ base: '25px', md: '0px' }}
-        mt={{ base: '40px', md: '14vh' }}
+        mb={{ base: '24px', md: '48px' }}
+        px={{ base: '20px', md: '0px' }}
+        mt={{ base: '32px', md: '12vh' }}
         flexDirection="column"
       >
         <Box me="auto">
-          <Heading color={textColor} fontSize="36px" mb="10px">
+          <Heading color={textColor} fontSize={{ base: '34px', md: '38px' }} mb="10px">
             Sign In
           </Heading>
-          <Text mb="36px" ms="4px" color={textColorSecondary} fontWeight="400" fontSize="md">
-            Enter your email and password to sign in!
+          <Text mb="32px" color={textColorSecondary} fontWeight="400" fontSize="md">
+            Use your email and password to continue.
           </Text>
         </Box>
-        <Flex
-          zIndex="2"
-          direction="column"
-          w={{ base: '100%', md: '420px' }}
+
+        <Box
+          as="form"
+          onSubmit={handleSignIn}
+          w="100%"
           maxW="100%"
-          background="transparent"
-          borderRadius="15px"
-          mx={{ base: 'auto', lg: 'unset' }}
-          me="auto"
-          mb={{ base: '20px', md: 'auto' }}
+          bg={cardBg}
+          border="1px solid"
+          borderColor={cardBorder}
+          borderRadius="20px"
+          p={{ base: '20px', md: '24px' }}
+          boxShadow="0 14px 40px rgba(17, 24, 39, 0.06)"
         >
-          <Button
-            fontSize="sm"
-            me="0px"
-            mb="26px"
-            py="15px"
-            h="50px"
-            borderRadius="16px"
-            bgColor={googleBg}
-            color={googleText}
-            fontWeight="500"
-            _hover={googleHover}
-            _active={googleActive}
-            _focus={googleActive}
-          >
-            <Icon as={FcGoogle} w="20px" h="20px" me="10px" />
-            Sign in with Google
-          </Button>
-          <Flex align="center" mb="25px">
-            <HSeparator />
-            <Text color="gray.400" mx="14px">
-              or
-            </Text>
-            <HSeparator />
-          </Flex>
           <FormControl>
-            <FormLabel
-              display="flex"
-              ms="4px"
-              fontSize="sm"
-              fontWeight="500"
-              color={textColor}
-              mb="8px"
-            >
-              Email<Text color={brandStars}>*</Text>
+            <FormLabel display="flex" alignItems="center" mb="8px" fontSize="sm" fontWeight="600" color={textColor}>
+              <Text as="span" color={requiredColor} me="6px">
+                *
+              </Text>
+              Email
             </FormLabel>
             <Input
-              isRequired={true}
-              variant="auth"
+              required
               fontSize="sm"
-              ms={{ base: '0px', md: '0px' }}
               type="email"
+              value={email}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
               placeholder="hello@tenantvoice.app"
-              mb="24px"
-              fontWeight="500"
+              mb="20px"
               size="lg"
+              autoComplete="email"
+              bg={inputBg}
+              border="1px solid"
+              borderColor={inputBorder}
+              borderRadius="14px"
+              h="50px"
+              _placeholder={{ color: inputPlaceholder }}
+              _focusVisible={{ borderColor: inputFocusBorder, boxShadow: 'none' }}
             />
-            <FormLabel ms="4px" fontSize="sm" fontWeight="500" color={textColor} display="flex">
-              Password<Text color={brandStars}>*</Text>
+
+            <FormLabel display="flex" alignItems="center" mb="8px" fontSize="sm" fontWeight="600" color={textColor}>
+              <Text as="span" color={requiredColor} me="6px">
+                *
+              </Text>
+              Password
             </FormLabel>
-            <InputGroup size="md">
-              <Input
-                isRequired={true}
-                fontSize="sm"
-                placeholder="Min. 8 characters"
-                mb="24px"
-                size="lg"
-                type={show ? 'text' : 'password'}
-                variant="auth"
-              />
-              <InputRightElement display="flex" alignItems="center" mt="4px">
-                <Icon
-                  color={textColorSecondary}
-                  _hover={{ cursor: 'pointer' }}
-                  as={show ? RiEyeCloseLine : MdOutlineRemoveRedEye}
-                  onClick={handleClick}
-                />
-              </InputRightElement>
-            </InputGroup>
-            <Flex justifyContent="space-between" align="center" mb="24px">
-              <FormControl display="flex" alignItems="center">
-                <Checkbox id="remember-login" colorScheme="brandScheme" me="10px" />
-                <FormLabel
-                  htmlFor="remember-login"
-                  mb="0"
-                  fontWeight="normal"
-                  color={textColor}
-                  fontSize="sm"
-                >
-                  Keep me logged in
-                </FormLabel>
-              </FormControl>
-              <Link href="/auth/forgot-password">
-                <Text color={textColorBrand} fontSize="sm" w="124px" fontWeight="500">
-                  Forgot password?
-                </Text>
-              </Link>
-            </Flex>
-            <Button fontSize="sm" variant="brand" fontWeight="500" w="100%" h="50" mb="24px">
+            <Input
+              required
+              fontSize="sm"
+              placeholder="Min. 8 characters"
+              mb="22px"
+              size="lg"
+              type="password"
+              value={password}
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
+              autoComplete="current-password"
+              bg={inputBg}
+              border="1px solid"
+              borderColor={inputBorder}
+              borderRadius="14px"
+              h="50px"
+              _placeholder={{ color: inputPlaceholder }}
+              _focusVisible={{ borderColor: inputFocusBorder, boxShadow: 'none' }}
+            />
+
+            <Button
+              type="submit"
+              fontSize="sm"
+              fontWeight="600"
+              w="100%"
+              h="50px"
+              mb="18px"
+              isLoading={isSubmitting}
+              loadingText="Signing in"
+              isDisabled={isSubmitting}
+              bg={primaryButtonBg}
+              color="white"
+              _hover={{ bg: primaryButtonHoverBg }}
+              _active={{ bg: primaryButtonHoverBg }}
+            >
               Sign In
             </Button>
           </FormControl>
-          <Flex
-            flexDirection="column"
-            justifyContent="center"
-            alignItems="start"
-            maxW="100%"
-            mt="0px"
-          >
-            <Link href="/auth/sign-up">
+
+          <Flex justifyContent="center" alignItems="center">
+            <Link href="/auth/register">
               <Text color={textColorDetails} fontWeight="400" fontSize="14px">
-                Not registered yet?
-                <Text color={textColorBrand} as="span" ms="5px" fontWeight="500">
-                  Create an Account
+                Need an account?
+                <Text color={textColorBrand} as="span" ms="5px" fontWeight="600">
+                  Register now
                 </Text>
               </Text>
             </Link>
           </Flex>
-        </Flex>
+        </Box>
       </Flex>
     </DefaultAuthLayout>
   );

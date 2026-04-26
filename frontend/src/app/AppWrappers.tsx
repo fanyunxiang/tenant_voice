@@ -6,11 +6,14 @@ import 'styles/MiniCalendar.css';
 import { ChakraProvider } from 'lib/chakra';
 import { ThemeProvider } from 'next-themes';
 import theme from '../theme/theme';
+import { GlobalNoticeProvider } from 'components/feedback/GlobalNoticeProvider';
 
 export default function AppWrappers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-      <ChakraProvider value={theme}>{children}</ChakraProvider>
+      <ChakraProvider value={theme}>
+        <GlobalNoticeProvider>{children}</GlobalNoticeProvider>
+      </ChakraProvider>
     </ThemeProvider>
   );
 }

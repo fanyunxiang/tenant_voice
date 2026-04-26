@@ -15,7 +15,17 @@ export const AvatarGroup = Chakra.AvatarGroup as any;
 export const Box = Chakra.Box as any;
 export const BreadcrumbItem = Chakra.BreadcrumbItem as any;
 export const BreadcrumbLink = Chakra.BreadcrumbLink as any;
-export const Button = Chakra.Button as any;
+export const Button = React.forwardRef<any, any>(
+  ({ isLoading, isDisabled, loading, disabled, ...rest }, ref) => (
+    <Chakra.Button
+      ref={ref}
+      loading={loading ?? isLoading}
+      disabled={disabled ?? isDisabled}
+      {...rest}
+    />
+  ),
+);
+Button.displayName = 'Button';
 export const Center = Chakra.Center as any;
 export const ChakraProvider = Chakra.ChakraProvider as any;
 export const DrawerBody = Chakra.DrawerBody as any;

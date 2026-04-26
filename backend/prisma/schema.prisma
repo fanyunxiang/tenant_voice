@@ -5,3 +5,664 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum UserRole {
+  TENANT
+  LANDLORD
+  AGENT
+  SERVICE_PROVIDER
+  ADMIN
+  REGULATOR
+}
+
+enum AccountStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  DEACTIVATED
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  TOWNHOUSE
+  UNIT
+  DUPLEX
+  OTHER
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  APPLICATIONS_CLOSED
+  LEASED
+  ARCHIVED
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  APPROVED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+}
+
+enum ApplicationDocumentStatus {
+  UPLOADED
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum ProfileDocumentType {
+  PASSPORT
+  DRIVERS_LICENCE
+  MEDICARE_CARD
+  BIRTH_CERTIFICATE
+  BANK_STATEMENT
+  CENTRELINK_STATEMENT
+  UTILITY_BILL
+  RENT_LEDGER
+  RENT_RECEIPT
+  VEHICLE_REGISTRATION
+  WRITTEN_REFERENCE
+  OTHER
+}
+
+enum ReviewStatus {
+  PUBLISHED
+  HIDDEN
+  FLAGGED
+  ARCHIVED
+}
+
+enum ConversationType {
+  DIRECT
+  GROUP
+  APPLICATION
+  PROPERTY
+  SYSTEM
+}
+
+enum MessageType {
+  TEXT
+  SYSTEM
+  FILE
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  BLOCKED
+  WITHDRAWN
+}
+
+enum ConnectionContextType {
+  NETWORK
+  LISTING
+  APPLICATION
+  MANUAL
+}
+
+enum RecommendationType {
+  PROPERTY
+  USER
+  PROFILE_MATCH
+  SERVICE_PROVIDER
+}
+
+enum RecommendationSource {
+  AI
+  RULE_ENGINE
+  MANUAL
+}
+
+enum ComplaintSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_REVIEW
+  ESCALATED
+  RESOLVED
+  CLOSED
+}
+
+enum RedFlagStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+enum NotificationCategory {
+  SYSTEM @map("system")
+  BID    @map("bid")
+  SOCIAL @map("social")
+  PROJECT @map("project")
+}
+
+model User {
+  id             String        @id @default(uuid()) @db.Uuid
+  authUserId     String?       @unique @map("auth_user_id") @db.Uuid
+  email          String        @unique
+  fullName       String?       @map("full_name")
+  phone          String?
+  avatarUrl      String?       @map("avatar_url")
+  primaryRole    UserRole      @default(TENANT) @map("primary_role")
+  status         AccountStatus @default(ACTIVE)
+  locale         String        @default("en-AU")
+  metadata       Json?
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt      DateTime?     @map("deleted_at") @db.Timestamptz(6)
+
+  roles                        UserRoleAssignment[]
+  tenantProfile                TenantProfile?
+  landlordProfile              LandlordProfile?
+  agentProfile                 AgentProfile?
+  serviceProviderProfile       ServiceProviderProfile?
+  ownedProperties              Property[]             @relation("property_owner")
+  managedProperties            Property[]             @relation("property_manager")
+  listings                     Listing[]              @relation("listing_creator")
+  applications                 RentalApplication[]    @relation("application_applicant")
+  applicationStatusEvents      ApplicationStatusEvent[] @relation("application_event_actor")
+  uploadedProfileDocuments     ProfileDocument[]      @relation("profile_document_owner")
+  verifiedProfileDocuments     ProfileDocument[]      @relation("profile_document_verifier")
+  verifiedApplicationDocuments ApplicationDocument[]  @relation("application_document_verifier")
+  reviewsWritten               Review[]               @relation("review_reviewer")
+  reviewsReceived              Review[]               @relation("review_reviewed")
+  conversationsCreated         Conversation[]         @relation("conversation_creator")
+  conversationParticipants     ConversationParticipant[]
+  sentMessages                 Message[]              @relation("message_sender")
+  sentConnectionRequests       ConnectionRequest[]    @relation("connection_sender")
+  receivedConnectionRequests   ConnectionRequest[]    @relation("connection_receiver")
+  recommendations              Recommendation[]       @relation("recommendation_target")
+  complaintsReported           Complaint[]            @relation("complaint_reporter")
+  complaintsAgainst            Complaint[]            @relation("complaint_against")
+  complaintEvents              ComplaintEvent[]       @relation("complaint_event_actor")
+  notifications                Notification[]
+
+  @@index([primaryRole])
+  @@index([status])
+  @@map("users")
+}
+
+model UserRoleAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      UserRole
+  isPrimary Boolean  @default(false) @map("is_primary")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+  @@map("user_role_assignments")
+}
+
+model TenantProfile {
+  userId             String    @id @map("user_id") @db.Uuid
+  aboutMe            String?   @map("about_me")
+  budgetMin          Decimal?  @map("budget_min") @db.Decimal(10, 2)
+  budgetMax          Decimal?  @map("budget_max") @db.Decimal(10, 2)
+  preferredLocations Json?     @map("preferred_locations")
+  moveInDate         DateTime? @map("move_in_date") @db.Date
+  householdSize      Int?      @map("household_size")
+  hasPets            Boolean   @default(false) @map("has_pets")
+  completionScore    Int       @default(0) @map("completion_score")
+  verificationPoints Int       @default(0) @map("verification_points")
+  metadata           Json?
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_profiles")
+}
+
+model LandlordProfile {
+  userId             String   @id @map("user_id") @db.Uuid
+  agencyName         String?  @map("agency_name")
+  licenseNumber      String?  @map("license_number")
+  portfolioSize      Int?     @map("portfolio_size")
+  verificationStatus String?  @map("verification_status")
+  metadata           Json?
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("landlord_profiles")
+}
+
+model AgentProfile {
+  userId             String   @id @map("user_id") @db.Uuid
+  agencyName         String?  @map("agency_name")
+  licenseNumber      String?  @map("license_number")
+  marketArea         String?  @map("market_area")
+  verificationStatus String?  @map("verification_status")
+  metadata           Json?
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("agent_profiles")
+}
+
+model ServiceProviderProfile {
+  userId             String   @id @map("user_id") @db.Uuid
+  companyName        String?  @map("company_name")
+  serviceCategories  Json?    @map("service_categories")
+  serviceArea        String?  @map("service_area")
+  pricingSummary     String?  @map("pricing_summary")
+  verificationStatus String?  @map("verification_status")
+  metadata           Json?
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("service_provider_profiles")
+}
+
+model Property {
+  id            String       @id @default(uuid()) @db.Uuid
+  ownerUserId   String       @map("owner_user_id") @db.Uuid
+  managerUserId String?      @map("manager_user_id") @db.Uuid
+  propertyType  PropertyType @default(OTHER) @map("property_type")
+  nickname      String?
+  addressLine1  String       @map("address_line_1")
+  addressLine2  String?      @map("address_line_2")
+  suburb        String
+  state         String
+  postcode      String
+  country       String       @default("AU")
+  latitude      Decimal?     @db.Decimal(10, 7)
+  longitude     Decimal?     @db.Decimal(10, 7)
+  bedrooms      Int?
+  bathrooms     Int?
+  parkingSpaces Int?         @map("parking_spaces")
+  petFriendly   Boolean      @default(false) @map("pet_friendly")
+  metadata      Json?
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  owner         User           @relation("property_owner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  manager       User?          @relation("property_manager", fields: [managerUserId], references: [id], onDelete: SetNull)
+  media         PropertyMedia[]
+  listings      Listing[]
+  reviews       Review[]
+  complaints    Complaint[]
+  redFlagEvents RedFlagEvent[]
+
+  @@index([ownerUserId])
+  @@index([managerUserId])
+  @@index([suburb, state, postcode])
+  @@map("properties")
+}
+
+model PropertyMedia {
+  id        String   @id @default(uuid()) @db.Uuid
+  propertyId String  @map("property_id") @db.Uuid
+  mediaUrl  String   @map("media_url")
+  mediaType String   @map("media_type")
+  caption   String?
+  sortOrder Int      @default(0) @map("sort_order")
+  isCover   Boolean  @default(false) @map("is_cover")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId, sortOrder])
+  @@map("property_media")
+}
+
+model Listing {
+  id                String       @id @default(uuid()) @db.Uuid
+  propertyId        String       @map("property_id") @db.Uuid
+  createdByUserId   String       @map("created_by_user_id") @db.Uuid
+  title             String
+  description       String?
+  weeklyRent        Decimal      @map("weekly_rent") @db.Decimal(10, 2)
+  bondAmount        Decimal?     @map("bond_amount") @db.Decimal(10, 2)
+  availableFrom     DateTime?    @map("available_from") @db.Date
+  leaseTermMonths   Int?         @map("lease_term_months")
+  status            ListingStatus @default(DRAFT)
+  inspectionDetails Json?        @map("inspection_details")
+  publishedAt       DateTime?    @map("published_at") @db.Timestamptz(6)
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property     Property            @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  createdBy    User                @relation("listing_creator", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  applications RentalApplication[]
+  conversations Conversation[]
+
+  @@index([propertyId])
+  @@index([createdByUserId])
+  @@index([status, publishedAt])
+  @@index([availableFrom, weeklyRent])
+  @@map("listings")
+}
+
+model RentalApplication {
+  id             String           @id @default(uuid()) @db.Uuid
+  listingId      String           @map("listing_id") @db.Uuid
+  applicantUserId String          @map("applicant_user_id") @db.Uuid
+  status         ApplicationStatus @default(SUBMITTED)
+  offerWeeklyRent Decimal?        @map("offer_weekly_rent") @db.Decimal(10, 2)
+  message        String?
+  metadata       Json?
+  submittedAt    DateTime         @default(now()) @map("submitted_at") @db.Timestamptz(6)
+  lastStatusAt   DateTime         @default(now()) @map("last_status_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing       Listing                 @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  applicant     User                    @relation("application_applicant", fields: [applicantUserId], references: [id], onDelete: Restrict)
+  statusEvents  ApplicationStatusEvent[]
+  documents     ApplicationDocument[]
+  conversations Conversation[]
+
+  @@unique([listingId, applicantUserId])
+  @@index([listingId, status])
+  @@index([applicantUserId, status])
+  @@map("rental_applications")
+}
+
+model ApplicationStatusEvent {
+  id              String            @id @default(uuid()) @db.Uuid
+  applicationId   String            @map("application_id") @db.Uuid
+  fromStatus      ApplicationStatus? @map("from_status")
+  toStatus        ApplicationStatus  @map("to_status")
+  note            String?
+  changedByUserId String?           @map("changed_by_user_id") @db.Uuid
+  createdAt       DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  application RentalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changedBy   User?             @relation("application_event_actor", fields: [changedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, createdAt])
+  @@map("application_status_events")
+}
+
+model ApplicationDocument {
+  id               String                    @id @default(uuid()) @db.Uuid
+  applicationId    String                    @map("application_id") @db.Uuid
+  documentType     ProfileDocumentType       @map("document_type")
+  fileUrl          String                    @map("file_url")
+  status           ApplicationDocumentStatus @default(UPLOADED)
+  verifiedByUserId String?                   @map("verified_by_user_id") @db.Uuid
+  verifiedAt       DateTime?                 @map("verified_at") @db.Timestamptz(6)
+  metadata         Json?
+  createdAt        DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  application RentalApplication @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  verifiedBy  User?             @relation("application_document_verifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([applicationId, documentType])
+  @@map("application_documents")
+}
+
+model ProfileDocument {
+  id               String              @id @default(uuid()) @db.Uuid
+  userId           String              @map("user_id") @db.Uuid
+  documentType     ProfileDocumentType @map("document_type")
+  fileUrl          String              @map("file_url")
+  pointsValue      Int                 @default(0) @map("points_value")
+  isRequired       Boolean             @default(false) @map("is_required")
+  isVerified       Boolean             @default(false) @map("is_verified")
+  verifiedByUserId String?             @map("verified_by_user_id") @db.Uuid
+  verifiedAt       DateTime?           @map("verified_at") @db.Timestamptz(6)
+  metadata         Json?
+  createdAt        DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime            @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user       User  @relation("profile_document_owner", fields: [userId], references: [id], onDelete: Cascade)
+  verifiedBy User? @relation("profile_document_verifier", fields: [verifiedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([userId, documentType])
+  @@map("profile_documents")
+}
+
+model Review {
+  id                    String      @id @default(uuid()) @db.Uuid
+  propertyId            String?     @map("property_id") @db.Uuid
+  reviewerUserId        String      @map("reviewer_user_id") @db.Uuid
+  reviewedUserId        String      @map("reviewed_user_id") @db.Uuid
+  rating                Int
+  title                 String?
+  body                  String?
+  mediaUrls             Json?       @map("media_urls")
+  isVerifiedInteraction Boolean     @default(false) @map("is_verified_interaction")
+  status                ReviewStatus @default(PUBLISHED)
+  createdAt             DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  property Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  reviewer User      @relation("review_reviewer", fields: [reviewerUserId], references: [id], onDelete: Restrict)
+  reviewed User      @relation("review_reviewed", fields: [reviewedUserId], references: [id], onDelete: Restrict)
+
+  @@index([propertyId])
+  @@index([reviewedUserId, status, createdAt])
+  @@map("reviews")
+}
+
+model Conversation {
+  id              String           @id @default(uuid()) @db.Uuid
+  conversationType ConversationType @map("conversation_type")
+  subject         String?
+  listingId       String?          @map("listing_id") @db.Uuid
+  applicationId   String?          @map("application_id") @db.Uuid
+  createdByUserId String?          @map("created_by_user_id") @db.Uuid
+  metadata        Json?
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  listing      Listing?           @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  application  RentalApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  createdBy    User?              @relation("conversation_creator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([listingId])
+  @@index([applicationId])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  joinedAt       DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  lastReadAt     DateTime? @map("last_read_at") @db.Timestamptz(6)
+  isMuted        Boolean   @default(false) @map("is_muted")
+  roleLabel      String?   @map("role_label")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId, lastReadAt])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String      @id @default(uuid()) @db.Uuid
+  conversationId String      @map("conversation_id") @db.Uuid
+  senderUserId   String?     @map("sender_user_id") @db.Uuid
+  messageType    MessageType @default(TEXT) @map("message_type")
+  content        String?
+  metadata       Json?
+  createdAt      DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  editedAt       DateTime?   @map("edited_at") @db.Timestamptz(6)
+  deletedAt      DateTime?   @map("deleted_at") @db.Timestamptz(6)
+
+  conversation Conversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User?              @relation("message_sender", fields: [senderUserId], references: [id], onDelete: SetNull)
+  attachments  MessageAttachment[]
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model MessageAttachment {
+  id            String   @id @default(uuid()) @db.Uuid
+  messageId     String   @map("message_id") @db.Uuid
+  fileUrl       String   @map("file_url")
+  fileName      String?  @map("file_name")
+  mimeType      String?  @map("mime_type")
+  fileSizeBytes Int?     @map("file_size_bytes")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("message_attachments")
+}
+
+model ConnectionRequest {
+  id              String                @id @default(uuid()) @db.Uuid
+  senderUserId    String                @map("sender_user_id") @db.Uuid
+  receiverUserId  String                @map("receiver_user_id") @db.Uuid
+  status          ConnectionStatus      @default(PENDING)
+  contextType     ConnectionContextType @default(NETWORK) @map("context_type")
+  contextEntityId String?               @map("context_entity_id")
+  note            String?
+  createdAt       DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  respondedAt     DateTime?             @map("responded_at") @db.Timestamptz(6)
+
+  sender   User @relation("connection_sender", fields: [senderUserId], references: [id], onDelete: Cascade)
+  receiver User @relation("connection_receiver", fields: [receiverUserId], references: [id], onDelete: Cascade)
+
+  @@unique([senderUserId, receiverUserId, contextType, contextEntityId])
+  @@index([receiverUserId, status, createdAt])
+  @@map("connection_requests")
+}
+
+model Recommendation {
+  id                 String               @id @default(uuid()) @db.Uuid
+  targetUserId       String               @map("target_user_id") @db.Uuid
+  recommendationType RecommendationType   @map("recommendation_type")
+  entityType         String               @map("entity_type")
+  entityId           String?              @map("entity_id")
+  score              Decimal?             @db.Decimal(5, 4)
+  reason             String?
+  source             RecommendationSource @default(RULE_ENGINE)
+  payload            Json?
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt          DateTime?            @map("expires_at") @db.Timestamptz(6)
+
+  targetUser User @relation("recommendation_target", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([targetUserId, recommendationType, createdAt])
+  @@map("recommendations")
+}
+
+model Complaint {
+  id             String            @id @default(uuid()) @db.Uuid
+  reporterUserId String            @map("reporter_user_id") @db.Uuid
+  againstUserId  String?           @map("against_user_id") @db.Uuid
+  propertyId     String?           @map("property_id") @db.Uuid
+  category       String
+  description    String
+  severity       ComplaintSeverity @default(MEDIUM)
+  status         ComplaintStatus   @default(OPEN)
+  lodgedAt       DateTime          @default(now()) @map("lodged_at") @db.Timestamptz(6)
+  resolvedAt     DateTime?         @map("resolved_at") @db.Timestamptz(6)
+  metadata       Json?
+
+  reporter      User            @relation("complaint_reporter", fields: [reporterUserId], references: [id], onDelete: Cascade)
+  against       User?           @relation("complaint_against", fields: [againstUserId], references: [id], onDelete: SetNull)
+  property      Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  events        ComplaintEvent[]
+  redFlagEvents RedFlagEvent[]
+
+  @@index([status, lodgedAt])
+  @@index([propertyId])
+  @@map("complaints")
+}
+
+model ComplaintEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  complaintId String    @map("complaint_id") @db.Uuid
+  actorUserId String?   @map("actor_user_id") @db.Uuid
+  eventType   String    @map("event_type")
+  note        String?
+  metadata    Json?
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  complaint Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("complaint_event_actor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([complaintId, createdAt])
+  @@map("complaint_events")
+}
+
+model RedFlagRule {
+  id             String            @id @default(uuid()) @db.Uuid
+  ruleKey        String            @unique @map("rule_key")
+  name           String
+  description    String?
+  thresholdCount Int               @default(3) @map("threshold_count")
+  windowDays     Int               @default(30) @map("window_days")
+  severity       ComplaintSeverity @default(HIGH)
+  isActive       Boolean           @default(true) @map("is_active")
+  config         Json?
+  createdAt      DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  events RedFlagEvent[]
+
+  @@map("red_flag_rules")
+}
+
+model RedFlagEvent {
+  id          String        @id @default(uuid()) @db.Uuid
+  ruleId      String        @map("rule_id") @db.Uuid
+  propertyId  String?       @map("property_id") @db.Uuid
+  complaintId String?       @map("complaint_id") @db.Uuid
+  summary     String
+  status      RedFlagStatus @default(OPEN)
+  triggeredAt DateTime      @default(now()) @map("triggered_at") @db.Timestamptz(6)
+  resolvedAt  DateTime?     @map("resolved_at") @db.Timestamptz(6)
+  evidence    Json?
+
+  rule      RedFlagRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  property  Property?   @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  complaint Complaint?  @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+
+  @@index([status, triggeredAt])
+  @@index([propertyId])
+  @@map("red_flag_events")
+}
+
+model Notification {
+  id        String               @id @default(uuid()) @db.Uuid
+  userId    String               @map("user_id") @db.Uuid
+  title     String
+  body      String
+  category  NotificationCategory
+  link      String?
+  isRead    Boolean              @default(false) @map("is_read")
+  createdAt DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
+  @@map("notifications")
+}

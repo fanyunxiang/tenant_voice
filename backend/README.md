@@ -32,6 +32,7 @@ Common commands:
 
 ```bash
 pnpm -C backend prisma:generate
+pnpm -C backend prisma:push
 pnpm -C backend prisma:pull
 pnpm -C backend prisma:migrate:dev
 ```

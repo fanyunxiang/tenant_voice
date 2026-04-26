@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server';
 import { getSupabaseEnv } from 'lib/supabase/env';
 import { getSupabaseServerClient } from 'lib/supabase/serverClient';
 
-export const dynamic = 'force-dynamic';
-
 export async function GET() {
   try {
     const { supabaseUrl, supabasePublishableKey } = getSupabaseEnv();
