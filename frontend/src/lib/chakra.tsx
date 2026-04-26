@@ -16,14 +16,56 @@ export const Box = Chakra.Box as any;
 export const BreadcrumbItem = Chakra.BreadcrumbItem as any;
 export const BreadcrumbLink = Chakra.BreadcrumbLink as any;
 export const Button = React.forwardRef<any, any>(
-  ({ isLoading, isDisabled, loading, disabled, ...rest }, ref) => (
-    <Chakra.Button
-      ref={ref}
-      loading={loading ?? isLoading}
-      disabled={disabled ?? isDisabled}
-      {...rest}
-    />
-  ),
+  (
+    {
+      isLoading,
+      isDisabled,
+      loading,
+      disabled,
+      colorScheme,
+      colorPalette,
+      variant,
+      bg,
+      background,
+      backgroundColor,
+      color,
+      _hover,
+      _active,
+      _focusVisible,
+      ...rest
+    },
+    ref,
+  ) => {
+    const brandBg = useColorModeValue('brand.500', 'brand.300');
+    const brandHoverBg = useColorModeValue('brand.600', 'brand.400');
+    const brandActiveBg = useColorModeValue('brand.600', 'brand.400');
+
+    const resolvedColorPalette = colorPalette ?? colorScheme;
+    const shouldUseBrandFallback =
+      !variant &&
+      !bg &&
+      !background &&
+      !backgroundColor &&
+      !resolvedColorPalette;
+
+    return (
+      <Chakra.Button
+        ref={ref}
+        loading={loading ?? isLoading}
+        disabled={disabled ?? isDisabled}
+        colorPalette={resolvedColorPalette}
+        variant={variant}
+        bg={shouldUseBrandFallback ? brandBg : bg}
+        background={background}
+        backgroundColor={backgroundColor}
+        color={shouldUseBrandFallback ? 'white' : color}
+        _hover={shouldUseBrandFallback ? (_hover ?? { bg: brandHoverBg }) : _hover}
+        _active={shouldUseBrandFallback ? (_active ?? { bg: brandActiveBg }) : _active}
+        _focusVisible={_focusVisible}
+        {...rest}
+      />
+    );
+  },
 );
 Button.displayName = 'Button';
 export const Center = Chakra.Center as any;

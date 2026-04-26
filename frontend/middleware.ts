@@ -1,28 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ACCESS_TOKEN_COOKIE, APP_DEFAULT_PATH, AUTH_REGISTER_PATH } from './src/lib/auth/constants';
+import { ACCESS_TOKEN_COOKIE, APP_DEFAULT_PATH } from './src/lib/auth/constants';
+
+const SIGN_IN_PATH = '/auth/sign-in';
+
+const PUBLIC_PAGE_PATHS = new Set([
+  '/',
+  '/admin/listings',
+  '/auth',
+  '/auth/sign-in',
+  '/auth/register',
+  '/auth/sign-up',
+  '/auth/callback',
+  '/auth/verified',
+]);
 
 function hasAccessToken(request: NextRequest) {
   return Boolean(request.cookies.get(ACCESS_TOKEN_COOKIE)?.value);
+}
+
+function isPublicPage(pathname: string) {
+  if (PUBLIC_PAGE_PATHS.has(pathname)) {
+    return true;
+  }
+
+  if (pathname.startsWith('/auth/')) {
+    return true;
+  }
+
+  return false;
 }
 
 export function middleware(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   const isAuthenticated = hasAccessToken(request);
 
-  const isRootPath = pathname === '/';
-  const isAdminPath = pathname.startsWith('/admin');
-  const isRtlPath = pathname.startsWith('/rtl');
   const isAuthPath = pathname.startsWith('/auth');
   const isAuthCallbackPath = pathname === '/auth/callback';
   const isAuthVerifiedPath = pathname === '/auth/verified';
   const isAllowedAuthPathWhenSignedIn = isAuthCallbackPath || isAuthVerifiedPath;
 
-  if (!isAuthenticated && (isRootPath || isAdminPath || isRtlPath)) {
+  if (!isAuthenticated && !isPublicPage(pathname)) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = AUTH_REGISTER_PATH;
+    redirectUrl.pathname = SIGN_IN_PATH;
     redirectUrl.search = '';
-
-    if ((isAdminPath || isRtlPath) && pathname !== AUTH_REGISTER_PATH) {
+    if (pathname !== SIGN_IN_PATH) {
       redirectUrl.searchParams.set('next', `${pathname}${search}`);
     }
 
