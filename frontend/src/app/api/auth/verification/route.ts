@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { activateUser, findAppUserByAuthUserId, provisionUserRecord } from 'lib/auth/userProvisioning';
+import { consumeVerificationEmailQuotaByEmail } from 'lib/auth/emailSendLimiter';
 import {
   optionalName,
   parseJsonBody,
@@ -122,6 +123,18 @@ async function resendSignupCode(request: Request) {
   const emailResult = validateEmail(bodyResult.data.email);
   if (emailResult.ok === false) {
     return NextResponse.json({ ok: false, message: emailResult.message }, { status: 400 });
+  }
+
+  const quota = await consumeVerificationEmailQuotaByEmail(emailResult.data);
+  if (quota.ok === false) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: quota.message,
+        retryAfterSeconds: quota.retryAfterSeconds,
+      },
+      { status: 429 },
+    );
   }
 
   const authClient = getSupabaseAuthClient();

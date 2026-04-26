@@ -1,5 +1,8 @@
+import { User } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { consumeVerificationEmailQuotaByUser } from 'lib/auth/emailSendLimiter';
 import { normalizeRegisterableRole } from 'lib/auth/roles';
+import { setSessionCookies } from 'lib/auth/sessionCookies';
 import { provisionUserRecord } from 'lib/auth/userProvisioning';
 import {
   optionalName,
@@ -8,15 +11,8 @@ import {
   validatePassword,
   validatePasswordConfirmation,
 } from 'lib/auth/validation';
-import { setSessionCookies } from 'lib/auth/sessionCookies';
 import { getSupabaseAuthClient } from 'lib/supabase/authClient';
 import { getSupabaseServerClient } from 'lib/supabase/serverClient';
-
-type AppUserStatusRow = {
-  id: string;
-  auth_user_id: string | null;
-  status: string;
-};
 
 export async function POST(request: Request) {
   return registerAccount(request);
@@ -24,6 +20,8 @@ export async function POST(request: Request) {
 
 /**
  * Registers a new account and creates the matching app user profile.
+ * If the email is pending verification, this endpoint resends verification email
+ * under the per-user limiter instead of deleting and recreating auth records.
  */
 async function registerAccount(request: Request) {
   const bodyResult = await parseJsonBody(request);
@@ -67,19 +65,65 @@ async function registerAccount(request: Request) {
   const fullName = optionalName(data.fullName);
   const email = emailResult.data;
   const password = passwordResult.data;
+  const authClient = getSupabaseAuthClient();
 
-  const resetResult = await resetRetryStateForEmail(email);
-  if (resetResult.ok === false) {
+  const existingAuthUsersResult = await listAuthUsersByEmail(email);
+  if (existingAuthUsersResult.ok === false) {
     return NextResponse.json(
       {
         ok: false,
-        message: resetResult.message,
+        message: existingAuthUsersResult.message,
       },
-      { status: resetResult.status },
+      { status: existingAuthUsersResult.status },
     );
   }
 
-  const authClient = getSupabaseAuthClient();
+  const confirmedAuthUser = existingAuthUsersResult.users.find((user) => user.email_confirmed_at);
+  if (confirmedAuthUser) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'This email is already registered. Please sign in.',
+      },
+      { status: 409 },
+    );
+  }
+
+  const pendingAuthUser = existingAuthUsersResult.users[0];
+  if (pendingAuthUser) {
+    const quota = await consumeVerificationEmailQuotaByUser(pendingAuthUser);
+    if (quota.ok === false) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: quota.message,
+          retryAfterSeconds: quota.retryAfterSeconds,
+        },
+        { status: 429 },
+      );
+    }
+
+    const resendResult = await authClient.auth.resend({
+      type: 'signup',
+      email,
+    });
+
+    if (resendResult.error) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: resendResult.error.message,
+        },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json({
+      ok: true,
+      message: 'Verification email sent. Please check your inbox.',
+      verificationRequired: true,
+    });
+  }
 
   const signUpResult = await authClient.auth.signUp({
     email,
@@ -133,6 +177,18 @@ async function registerAccount(request: Request) {
     }
   }
 
+  if (authUser && !signUpResult.data.session) {
+    // The initial signup send counts toward the per-user email quota.
+    try {
+      await consumeVerificationEmailQuotaByUser(authUser);
+    } catch (error) {
+      console.error(
+        'record initial verification email limiter state failed:',
+        error instanceof Error ? error.message : String(error),
+      );
+    }
+  }
+
   const response = NextResponse.json({
     ok: true,
     message: signUpResult.data.session
@@ -152,67 +208,6 @@ function isAlreadyRegisteredError(message: string) {
   return /already registered|already been registered/i.test(message);
 }
 
-async function resetRetryStateForEmail(
-  email: string,
-): Promise<{ ok: true } | { ok: false; status: number; message: string }> {
-  const supabase = getSupabaseServerClient();
-  const userResult = await supabase
-    .from('users')
-    .select('id, auth_user_id, status')
-    .eq('email', email)
-    .maybeSingle();
-
-  if (userResult.error) {
-    return {
-      ok: false,
-      status: 500,
-      message: `check existing app user failed: ${userResult.error.message}`,
-    };
-  }
-
-  const appUser = (userResult.data as AppUserStatusRow | null) ?? null;
-  if (appUser?.status === 'ACTIVE') {
-    return {
-      ok: false,
-      status: 409,
-      message: 'This email is already registered. Please sign in.',
-    };
-  }
-
-  if (appUser) {
-    const deleteAppUser = await supabase.from('users').delete().eq('id', appUser.id);
-    if (deleteAppUser.error) {
-      return {
-        ok: false,
-        status: 500,
-        message: `clear failed app user failed: ${deleteAppUser.error.message}`,
-      };
-    }
-  }
-
-  const authUsersResult = await listAuthUsersByEmail(email);
-  if (authUsersResult.ok === false) {
-    return authUsersResult;
-  }
-
-  for (const authUser of authUsersResult.users) {
-    if (authUser.email_confirmed_at) {
-      return {
-        ok: false,
-        status: 409,
-        message: 'This email is already registered. Please sign in.',
-      };
-    }
-
-    const deleteResult = await deleteAuthUserById(authUser.id);
-    if (deleteResult.ok === false) {
-      return deleteResult;
-    }
-  }
-
-  return { ok: true };
-}
-
 async function rollbackFailedProvision(authUserId: string) {
   const supabase = getSupabaseServerClient();
 
@@ -230,12 +225,15 @@ async function rollbackFailedProvision(authUserId: string) {
 async function listAuthUsersByEmail(
   email: string,
 ): Promise<
-  | { ok: true; users: Array<{ id: string; email: string | null; email_confirmed_at: string | null }> }
+  | {
+      ok: true;
+      users: User[];
+    }
   | { ok: false; status: number; message: string }
 > {
   const targetEmail = email.toLowerCase();
   const supabase = getSupabaseServerClient();
-  const users: Array<{ id: string; email: string | null; email_confirmed_at: string | null }> = [];
+  const users: User[] = [];
   let page = 1;
   const perPage = 200;
 
@@ -249,16 +247,8 @@ async function listAuthUsersByEmail(
       };
     }
 
-    const currentUsers =
-      listResult.data.users?.map((user) => ({
-        id: user.id,
-        email: user.email ?? null,
-        email_confirmed_at: user.email_confirmed_at ?? null,
-      })) ?? [];
-
-    users.push(
-      ...currentUsers.filter((user) => (user.email ?? '').toLowerCase() === targetEmail),
-    );
+    const currentUsers = listResult.data.users ?? [];
+    users.push(...currentUsers.filter((user) => (user.email ?? '').toLowerCase() === targetEmail));
 
     if (currentUsers.length < perPage) {
       break;
@@ -266,6 +256,12 @@ async function listAuthUsersByEmail(
 
     page += 1;
   }
+
+  users.sort((a, b) => {
+    const aTs = new Date(a.created_at ?? 0).getTime();
+    const bTs = new Date(b.created_at ?? 0).getTime();
+    return bTs - aTs;
+  });
 
   return { ok: true, users };
 }

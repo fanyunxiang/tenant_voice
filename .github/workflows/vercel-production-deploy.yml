@@ -1,0 +1,24 @@
+name: Vercel Production Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/vercel-production-deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Deploy to Vercel (Production)
+        run: npx vercel deploy ./frontend --prod --yes --scope yunxiang-fans-projects --token "${{ secrets.VERCEL_TOKEN }}"

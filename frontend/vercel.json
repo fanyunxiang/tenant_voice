@@ -1,0 +1,3 @@
+{
+  "buildCommand": "next build --webpack && rm -rf path0 && ln -s . path0"
+}
