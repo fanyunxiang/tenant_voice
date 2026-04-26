@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { activateUser, findAppUserByAuthUserId, provisionUserRecord } from 'lib/auth/userProvisioning';
-import { consumeVerificationEmailQuotaByEmail } from 'lib/auth/emailSendLimiter';
+import {
+  checkVerificationEmailQuotaByEmail,
+  recordVerificationEmailSentByUser,
+} from 'lib/auth/emailSendLimiter';
 import {
   optionalName,
   parseJsonBody,
@@ -125,7 +128,7 @@ async function resendSignupCode(request: Request) {
     return NextResponse.json({ ok: false, message: emailResult.message }, { status: 400 });
   }
 
-  const quota = await consumeVerificationEmailQuotaByEmail(emailResult.data);
+  const { quota, user } = await checkVerificationEmailQuotaByEmail(emailResult.data);
   if (quota.ok === false) {
     return NextResponse.json(
       {
@@ -151,6 +154,10 @@ async function resendSignupCode(request: Request) {
       },
       { status: 400 },
     );
+  }
+
+  if (user) {
+    await recordVerificationEmailSentByUser(user);
   }
 
   return NextResponse.json({

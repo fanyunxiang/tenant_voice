@@ -1,6 +1,9 @@
 import { User } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
-import { consumeVerificationEmailQuotaByUser } from 'lib/auth/emailSendLimiter';
+import {
+  checkVerificationEmailQuotaByUser,
+  recordVerificationEmailSentByUser,
+} from 'lib/auth/emailSendLimiter';
 import { normalizeRegisterableRole } from 'lib/auth/roles';
 import { setSessionCookies } from 'lib/auth/sessionCookies';
 import { provisionUserRecord } from 'lib/auth/userProvisioning';
@@ -91,7 +94,7 @@ async function registerAccount(request: Request) {
 
   const pendingAuthUser = existingAuthUsersResult.users[0];
   if (pendingAuthUser) {
-    const quota = await consumeVerificationEmailQuotaByUser(pendingAuthUser);
+    const quota = await checkVerificationEmailQuotaByUser(pendingAuthUser);
     if (quota.ok === false) {
       return NextResponse.json(
         {
@@ -117,6 +120,8 @@ async function registerAccount(request: Request) {
         { status: 400 },
       );
     }
+
+    await recordVerificationEmailSentByUser(pendingAuthUser);
 
     return NextResponse.json({
       ok: true,
@@ -180,7 +185,7 @@ async function registerAccount(request: Request) {
   if (authUser && !signUpResult.data.session) {
     // The initial signup send counts toward the per-user email quota.
     try {
-      await consumeVerificationEmailQuotaByUser(authUser);
+      await recordVerificationEmailSentByUser(authUser);
     } catch (error) {
       console.error(
         'record initial verification email limiter state failed:',

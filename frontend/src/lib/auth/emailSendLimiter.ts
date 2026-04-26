@@ -13,13 +13,17 @@ type LimiterState = {
   blocked_until_ms: number | null;
 };
 
-type LimiterResult =
-  | { ok: true }
-  | {
-      ok: false;
-      retryAfterSeconds: number;
-      message: string;
-    };
+type QuotaBlockedResult = {
+  ok: false;
+  retryAfterSeconds: number;
+  message: string;
+};
+
+type QuotaAllowedResult = {
+  ok: true;
+};
+
+export type QuotaCheckResult = QuotaAllowedResult | QuotaBlockedResult;
 
 function parseLimiterState(raw: unknown, nowMs: number): LimiterState {
   if (typeof raw !== 'object' || raw === null) {
@@ -103,6 +107,14 @@ async function getAuthUsersByEmail(email: string): Promise<User[]> {
   return users;
 }
 
+function toBlockedResult(retryAfterMs: number): QuotaBlockedResult {
+  return {
+    ok: false,
+    retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)),
+    message: buildRetryMessage(),
+  };
+}
+
 export async function findLatestAuthUserByEmail(email: string): Promise<User | null> {
   const users = await getAuthUsersByEmail(email);
   if (users.length === 0) {
@@ -118,50 +130,66 @@ export async function findLatestAuthUserByEmail(email: string): Promise<User | n
   return users[0] ?? null;
 }
 
-export async function consumeVerificationEmailQuotaByUser(user: User): Promise<LimiterResult> {
+export async function checkVerificationEmailQuotaByUser(user: User): Promise<QuotaCheckResult> {
   const nowMs = Date.now();
-  const currentState = parseLimiterState(user.user_metadata?.[LIMITER_METADATA_KEY], nowMs);
+  let state = parseLimiterState(user.user_metadata?.[LIMITER_METADATA_KEY], nowMs);
 
-  if (currentState.blocked_until_ms && nowMs < currentState.blocked_until_ms) {
-    const retryAfterSeconds = Math.ceil((currentState.blocked_until_ms - nowMs) / 1000);
-    return {
-      ok: false,
-      retryAfterSeconds,
-      message: buildRetryMessage(),
+  // Cooldown has elapsed: start a fresh sending window.
+  if (state.blocked_until_ms && nowMs >= state.blocked_until_ms) {
+    state = {
+      window_start_ms: nowMs,
+      sent_count: 0,
+      blocked_until_ms: null,
     };
   }
 
-  if (currentState.sent_count >= MAX_EMAILS_PER_HOUR) {
+  if (state.blocked_until_ms && nowMs < state.blocked_until_ms) {
+    return toBlockedResult(state.blocked_until_ms - nowMs);
+  }
+
+  if (state.sent_count >= MAX_EMAILS_PER_HOUR) {
     const blockedUntil = nowMs + COOLDOWN_MS;
-    const blockedState: LimiterState = {
-      ...currentState,
+    await updateLimiterState(user, {
+      window_start_ms: nowMs,
+      sent_count: 0,
       blocked_until_ms: blockedUntil,
-    };
+    });
+    return toBlockedResult(COOLDOWN_MS);
+  }
 
-    await updateLimiterState(user, blockedState);
+  return { ok: true };
+}
 
-    return {
-      ok: false,
-      retryAfterSeconds: Math.ceil(COOLDOWN_MS / 1000),
-      message: buildRetryMessage(),
+export async function checkVerificationEmailQuotaByEmail(email: string): Promise<{
+  quota: QuotaCheckResult;
+  user: User | null;
+}> {
+  const user = await findLatestAuthUserByEmail(email);
+  if (!user) {
+    return { quota: { ok: true }, user: null };
+  }
+
+  const quota = await checkVerificationEmailQuotaByUser(user);
+  return { quota, user };
+}
+
+export async function recordVerificationEmailSentByUser(user: User): Promise<void> {
+  const nowMs = Date.now();
+  let state = parseLimiterState(user.user_metadata?.[LIMITER_METADATA_KEY], nowMs);
+
+  if (state.blocked_until_ms && nowMs >= state.blocked_until_ms) {
+    state = {
+      window_start_ms: nowMs,
+      sent_count: 0,
+      blocked_until_ms: null,
     };
   }
 
   const nextState: LimiterState = {
-    ...currentState,
-    sent_count: currentState.sent_count + 1,
+    window_start_ms: state.window_start_ms,
+    sent_count: state.sent_count + 1,
     blocked_until_ms: null,
   };
 
   await updateLimiterState(user, nextState);
-  return { ok: true };
-}
-
-export async function consumeVerificationEmailQuotaByEmail(email: string): Promise<LimiterResult> {
-  const user = await findLatestAuthUserByEmail(email);
-  if (!user) {
-    return { ok: true };
-  }
-
-  return consumeVerificationEmailQuotaByUser(user);
 }
