@@ -6,13 +6,15 @@ import { usePathname } from 'next/navigation';
 import { Box, Button, Flex, Icon, Link, useColorMode, useColorModeValue } from 'lib/chakra';
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import { loadSession, SessionUser } from 'lib/auth/client';
-import { defaultUserRole, roleMenus } from 'variables/roleMenus';
+import { defaultUserRole, resolveMenuRole, roleMenus } from 'variables/roleMenus';
 
 export default function TenantTopNav() {
   const pathname = usePathname();
   const { colorMode, toggleColorMode } = useColorMode();
-  const menuItems = roleMenus[defaultUserRole];
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const menuRole = resolveMenuRole(sessionUser?.primary_role);
+  const menuItems = roleMenus[menuRole] ?? roleMenus[defaultUserRole];
+  const brandLink = menuItems[0]?.href ?? '/admin/listings';
 
   const navBg = useColorModeValue('white', 'navy.800');
   const borderColor = useColorModeValue('secondaryGray.400', 'whiteAlpha.100');
@@ -87,7 +89,7 @@ export default function TenantTopNav() {
       >
         <Link
           as={NextLink}
-          href="/admin/listings"
+          href={brandLink}
           fontWeight="800"
           letterSpacing="0.12em"
           textTransform="uppercase"

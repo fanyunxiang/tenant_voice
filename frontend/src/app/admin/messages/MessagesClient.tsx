@@ -23,13 +23,19 @@ import {
   type MessageItem,
 } from 'lib/tenant/messagesClient';
 import { getSupabaseBrowserClient } from 'lib/supabase/browserClient';
+import { loadSession } from 'lib/auth/client';
 
 const FALLBACK_REFRESH_INTERVAL_MS = 30000;
 const TOKEN_REFRESH_INTERVAL_MS = 45 * 60 * 1000;
 
-const recommendations = [
+const tenantRecommendations = [
   { id: 'rec1', label: '2-bed in Parramatta', reason: 'Within budget + high owner rating' },
   { id: 'rec2', label: '1-bed in Strathfield', reason: 'Near preferred commute + pet friendly' },
+];
+
+const landlordLeads = [
+  { id: 'lead1', label: 'New enquiry for 2-bed in Parramatta', reason: 'Tenant asks for inspection time' },
+  { id: 'lead2', label: 'Application follow-up needed', reason: 'Missing proof of income document' },
 ];
 
 function formatChatTime(iso: string) {
@@ -65,6 +71,7 @@ export default function MessagesClient() {
   const [composerText, setComposerText] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
   const [realtimeConnected, setRealtimeConnected] = useState(false);
+  const [isLandlord, setIsLandlord] = useState(false);
 
   const selectedConversationIdRef = useRef<string | null>(null);
   const conversationIdsRef = useRef<Set<string>>(new Set());
@@ -178,6 +185,29 @@ export default function MessagesClient() {
     },
     [maybeMarkSelectedConversationAsRead, showNotice],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncRole = async () => {
+      try {
+        const result = await loadSession();
+        if (!cancelled) {
+          setIsLandlord(Boolean(result.ok && result.user?.primary_role === 'LANDLORD'));
+        }
+      } catch {
+        if (!cancelled) {
+          setIsLandlord(false);
+        }
+      }
+    };
+
+    void syncRole();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     void refreshMessages({ silent: false });
@@ -311,6 +341,12 @@ export default function MessagesClient() {
     void handleSend();
   };
 
+  const headerSubtitle = isLandlord
+    ? 'Live text chat with tenants and enquirers, including read/unread tracking.'
+    : 'Live text chat with read/unread status.';
+  const sidePanelTitle = isLandlord ? 'Enquiry Leads' : 'Recommended Matches';
+  const sideItems = isLandlord ? landlordLeads : tenantRecommendations;
+
   return (
     <Box pt={{ base: '8px', md: '12px' }}>
       <Flex mb="16px" align="center" justify="space-between">
@@ -319,7 +355,7 @@ export default function MessagesClient() {
             Messages
           </Text>
           <Text fontSize="sm" color={textSecondary}>
-            Live text chat with read/unread status.
+            {headerSubtitle}
           </Text>
         </Box>
         <Badge colorScheme={realtimeConnected ? 'green' : 'yellow'} px="10px" py="6px" borderRadius="999px">
@@ -465,11 +501,11 @@ export default function MessagesClient() {
           <Card p="0" bg={cardBg}>
             <Flex px="18px" py="14px" borderBottom="1px solid" borderColor={borderColor}>
               <Text fontSize="md" fontWeight="700" color={textPrimary}>
-                Recommended Matches
+                {sidePanelTitle}
               </Text>
             </Flex>
             <Box p="14px" pt="10px">
-              {recommendations.map((item) => (
+              {sideItems.map((item) => (
                 <Box key={item.id} py="8px">
                   <Text fontSize="sm" fontWeight="600" color={textPrimary}>
                     {item.label}
