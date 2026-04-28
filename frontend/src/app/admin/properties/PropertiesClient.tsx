@@ -44,6 +44,26 @@ type PropertyFormState = {
   propertyType: string;
 };
 
+type AddressSuggestion = {
+  id: string;
+  label: string;
+  addressLine1: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+};
+
+type AddressAutocompleteApiResponse = {
+  ok: boolean;
+  message?: string;
+  data?: {
+    suggestions?: AddressSuggestion[];
+  };
+};
+
+const ADDRESS_MIN_QUERY_LENGTH = 3;
+const ADDRESS_DEBOUNCE_MS = 320;
+
 const STATUS_LABELS: Record<LandlordListingStatus, string> = {
   DRAFT: '草稿',
   PUBLISHED: '已上架',
@@ -112,6 +132,40 @@ function parsePositiveNumber(raw: string): number | null {
   return parsed;
 }
 
+function isAbortError(error: unknown) {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error as { name?: string }).name === 'AbortError'
+  );
+}
+
+async function fetchAddressSuggestions(
+  text: string,
+  signal: AbortSignal,
+): Promise<AddressSuggestion[]> {
+  const response = await fetch(`/api/geo/address-autocomplete?text=${encodeURIComponent(text)}`, {
+    method: 'GET',
+    cache: 'no-store',
+    credentials: 'same-origin',
+    signal,
+  });
+
+  let body: AddressAutocompleteApiResponse | null = null;
+  try {
+    body = (await response.json()) as AddressAutocompleteApiResponse;
+  } catch {
+    body = null;
+  }
+
+  if (!response.ok || !body?.ok) {
+    throw new Error(body?.message || 'Failed to load address suggestions.');
+  }
+
+  return body.data?.suggestions ?? [];
+}
+
 export default function PropertiesClient() {
   const { showNotice } = useGlobalNotice();
   const [properties, setProperties] = useState<LandlordPropertyListItem[]>([]);
@@ -127,6 +181,10 @@ export default function PropertiesClient() {
   const [editingListingId, setEditingListingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<PropertyFormState>(emptyForm());
   const [isUpdating, setIsUpdating] = useState(false);
+  const [createAddressSuggestions, setCreateAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [editAddressSuggestions, setEditAddressSuggestions] = useState<AddressSuggestion[]>([]);
+  const [isCreateAddressLoading, setIsCreateAddressLoading] = useState(false);
+  const [isEditAddressLoading, setIsEditAddressLoading] = useState(false);
 
   const [actionLoadingKey, setActionLoadingKey] = useState<string | null>(null);
 
@@ -210,6 +268,82 @@ export default function PropertiesClient() {
     };
   }, [refreshProperties]);
 
+  useEffect(() => {
+    if (!isCreateOpen) {
+      setCreateAddressSuggestions([]);
+      setIsCreateAddressLoading(false);
+      return;
+    }
+
+    const query = createForm.addressLine1.trim();
+    if (query.length < ADDRESS_MIN_QUERY_LENGTH) {
+      setCreateAddressSuggestions([]);
+      setIsCreateAddressLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsCreateAddressLoading(true);
+
+    const timer = setTimeout(() => {
+      void fetchAddressSuggestions(query, controller.signal)
+        .then((suggestions) => {
+          setCreateAddressSuggestions(suggestions);
+        })
+        .catch((error) => {
+          if (!isAbortError(error)) {
+            setCreateAddressSuggestions([]);
+          }
+        })
+        .finally(() => {
+          setIsCreateAddressLoading(false);
+        });
+    }, ADDRESS_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [isCreateOpen, createForm.addressLine1]);
+
+  useEffect(() => {
+    if (!editingListingId) {
+      setEditAddressSuggestions([]);
+      setIsEditAddressLoading(false);
+      return;
+    }
+
+    const query = editForm.addressLine1.trim();
+    if (query.length < ADDRESS_MIN_QUERY_LENGTH) {
+      setEditAddressSuggestions([]);
+      setIsEditAddressLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    setIsEditAddressLoading(true);
+
+    const timer = setTimeout(() => {
+      void fetchAddressSuggestions(query, controller.signal)
+        .then((suggestions) => {
+          setEditAddressSuggestions(suggestions);
+        })
+        .catch((error) => {
+          if (!isAbortError(error)) {
+            setEditAddressSuggestions([]);
+          }
+        })
+        .finally(() => {
+          setIsEditAddressLoading(false);
+        });
+    }, ADDRESS_DEBOUNCE_MS);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [editingListingId, editForm.addressLine1]);
+
   const submitCreate = async () => {
     const weeklyRent = parsePositiveNumber(createForm.weeklyRent);
     if (!weeklyRent) {
@@ -240,6 +374,7 @@ export default function PropertiesClient() {
 
       showNotice({ type: 'success', message: result.message || 'Property created as draft.' });
       setCreateForm(emptyForm());
+      setCreateAddressSuggestions([]);
       setIsCreateOpen(false);
       await refreshProperties('refresh');
     } catch (error) {
@@ -253,11 +388,36 @@ export default function PropertiesClient() {
   const startEdit = (item: LandlordPropertyListItem) => {
     setEditingListingId(item.listingId);
     setEditForm(toFormState(item));
+    setEditAddressSuggestions([]);
   };
 
   const cancelEdit = () => {
     setEditingListingId(null);
     setEditForm(emptyForm());
+    setEditAddressSuggestions([]);
+  };
+
+  const applyAddressSuggestion = (mode: 'create' | 'edit', suggestion: AddressSuggestion) => {
+    if (mode === 'create') {
+      setCreateForm((current) => ({
+        ...current,
+        addressLine1: suggestion.addressLine1 || current.addressLine1,
+        suburb: suggestion.suburb || current.suburb,
+        state: suggestion.state || current.state,
+        postcode: suggestion.postcode || current.postcode,
+      }));
+      setCreateAddressSuggestions([]);
+      return;
+    }
+
+    setEditForm((current) => ({
+      ...current,
+      addressLine1: suggestion.addressLine1 || current.addressLine1,
+      suburb: suggestion.suburb || current.suburb,
+      state: suggestion.state || current.state,
+      postcode: suggestion.postcode || current.postcode,
+    }));
+    setEditAddressSuggestions([]);
   };
 
   const submitEdit = async () => {
@@ -347,9 +507,13 @@ export default function PropertiesClient() {
     onSubmit: () => void,
     onCancel: () => void,
     loading: boolean,
-  ) => (
-    <Box>
-      <Grid templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }} gap="10px">
+  ) => {
+    const addressSuggestions = mode === 'create' ? createAddressSuggestions : editAddressSuggestions;
+    const isAddressLoading = mode === 'create' ? isCreateAddressLoading : isEditAddressLoading;
+
+    return (
+      <Box>
+        <Grid templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }} gap="10px">
         <FormControl>
           <FormLabel fontSize="xs" fontWeight="700" color={textPrimary} mb="6px">
             Title
@@ -380,18 +544,58 @@ export default function PropertiesClient() {
           />
         </FormControl>
 
-        <FormControl>
+        <FormControl position="relative">
           <FormLabel fontSize="xs" fontWeight="700" color={textPrimary} mb="6px">
             Address Line 1
           </FormLabel>
           <Input
             value={form.addressLine1}
             onChange={(event: ChangeEvent<HTMLInputElement>) => onChange('addressLine1', event.target.value)}
+            placeholder="Start typing an Australian address..."
             bg={inputBg}
             border="1px solid"
             borderColor={inputBorder}
             _focusVisible={{ borderColor: inputFocusBorder, boxShadow: 'none' }}
           />
+          {isAddressLoading || addressSuggestions.length > 0 ? (
+            <Box
+              position="absolute"
+              left="0"
+              right="0"
+              top="calc(100% + 4px)"
+              bg={panelBg}
+              border="1px solid"
+              borderColor={borderColor}
+              borderRadius="12px"
+              zIndex="dropdown"
+              maxH="220px"
+              overflowY="auto"
+              boxShadow="md"
+            >
+              {isAddressLoading ? (
+                <Text px="10px" py="8px" fontSize="xs" color={textSecondary}>
+                  Searching AU addresses...
+                </Text>
+              ) : (
+                addressSuggestions.map((suggestion) => (
+                  <Button
+                    key={suggestion.id}
+                    size="sm"
+                    variant="ghost"
+                    justifyContent="flex-start"
+                    w="100%"
+                    borderRadius="0"
+                    fontWeight="500"
+                    color={textPrimary}
+                    onClick={() => applyAddressSuggestion(mode, suggestion)}
+                    _hover={{ bg: inputBg }}
+                  >
+                    {suggestion.label}
+                  </Button>
+                ))
+              )}
+            </Box>
+          ) : null}
         </FormControl>
 
         <FormControl>
@@ -500,42 +704,43 @@ export default function PropertiesClient() {
             </Select>
           </FormControl>
         ) : null}
-      </Grid>
+        </Grid>
 
-      <FormControl mt="10px">
-        <FormLabel fontSize="xs" fontWeight="700" color={textPrimary} mb="6px">
-          Description
-        </FormLabel>
-        <Textarea
-          value={form.description}
-          onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange('description', event.target.value)}
-          bg={inputBg}
-          border="1px solid"
-          borderColor={inputBorder}
-          _focusVisible={{ borderColor: inputFocusBorder, boxShadow: 'none' }}
-          rows={4}
-        />
-      </FormControl>
+        <FormControl mt="10px">
+          <FormLabel fontSize="xs" fontWeight="700" color={textPrimary} mb="6px">
+            Description
+          </FormLabel>
+          <Textarea
+            value={form.description}
+            onChange={(event: ChangeEvent<HTMLTextAreaElement>) => onChange('description', event.target.value)}
+            bg={inputBg}
+            border="1px solid"
+            borderColor={inputBorder}
+            _focusVisible={{ borderColor: inputFocusBorder, boxShadow: 'none' }}
+            rows={4}
+          />
+        </FormControl>
 
-      <Flex justify="flex-end" gap="8px" mt="12px">
-        <Button
-          size="sm"
-          onClick={onSubmit}
-          loading={loading}
-          disabled={loading}
-          bg={primaryButtonBg}
-          color="white"
-          _hover={{ bg: primaryButtonHoverBg }}
-          _active={{ bg: primaryButtonHoverBg }}
-        >
-          {mode === 'create' ? 'Create Draft' : 'Save'}
-        </Button>
-        <Button size="sm" variant="outline" onClick={onCancel} disabled={loading}>
-          Cancel
-        </Button>
-      </Flex>
-    </Box>
-  );
+        <Flex justify="flex-end" gap="8px" mt="12px">
+          <Button
+            size="sm"
+            onClick={onSubmit}
+            loading={loading}
+            disabled={loading}
+            bg={primaryButtonBg}
+            color="white"
+            _hover={{ bg: primaryButtonHoverBg }}
+            _active={{ bg: primaryButtonHoverBg }}
+          >
+            {mode === 'create' ? 'Create Draft' : 'Save'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={onCancel} disabled={loading}>
+            Cancel
+          </Button>
+        </Flex>
+      </Box>
+    );
+  };
 
   if (isLandlord === false) {
     return (
