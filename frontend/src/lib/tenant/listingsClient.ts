@@ -1,3 +1,5 @@
+import { handleExpiredSessionResponse, sessionExpiredError } from 'lib/auth/handleExpiredSessionClient';
+
 type ListingsApiResult<TData = unknown> = {
   ok: boolean;
   message?: string;
@@ -21,6 +23,7 @@ export type TenantListingItem = {
   petFriendly: boolean;
   landlordName: string;
   publishedAt: string | null;
+  coverImageUrl?: string | null;
 };
 
 export type TenantListingsPagination = {
@@ -58,6 +61,9 @@ async function parseResult<TData>(response: Response): Promise<ListingsApiResult
   }
 
   if (!response.ok) {
+    if (handleExpiredSessionResponse(response)) {
+      throw sessionExpiredError();
+    }
     throw new Error(body?.message || 'Request failed.');
   }
 

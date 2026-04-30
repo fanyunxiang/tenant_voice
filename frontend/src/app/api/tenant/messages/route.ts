@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findAppUserByAuthUserId } from 'lib/auth/userProvisioning';
-import { ACCESS_TOKEN_COOKIE } from 'lib/auth/constants';
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from 'lib/auth/constants';
 import { parseJsonBody } from 'lib/auth/validation';
 import { getSupabaseAuthClient } from 'lib/supabase/authClient';
 import { getSupabaseServerClient } from 'lib/supabase/serverClient';
+import type { User } from '@supabase/supabase-js';
+import { buildExpiredSessionResponse, getRequestSessionExpiryValue, isSessionWindowExpired } from 'lib/auth/authErrors';
 
 type AuthContext = {
   appUser: {
@@ -461,24 +463,48 @@ async function resolveAuthenticatedUser(
       response: NextResponse;
     }
 > {
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
+  const expiresAt = getRequestSessionExpiryValue(request);
+  if (isSessionWindowExpired(expiresAt)) {
     return {
       ok: false,
-      response: NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 }),
+      response: buildExpiredSessionResponse(),
+    };
+  }
+
+  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+
+  if (!accessToken && !refreshToken) {
+    return {
+      ok: false,
+      response: buildExpiredSessionResponse(),
     };
   }
 
   const authClient = getSupabaseAuthClient();
-  const authUserResult = await authClient.auth.getUser(accessToken);
-  if (authUserResult.error || !authUserResult.data.user) {
+  let authUser: User | null = null;
+  if (accessToken) {
+    const authUserResult = await authClient.auth.getUser(accessToken);
+    if (!authUserResult.error && authUserResult.data.user) {
+      authUser = authUserResult.data.user;
+    }
+  }
+
+  if (!authUser && refreshToken) {
+    const refreshResult = await authClient.auth.refreshSession({ refresh_token: refreshToken });
+    if (!refreshResult.error && refreshResult.data.session?.user) {
+      authUser = refreshResult.data.session.user;
+    }
+  }
+
+  if (!authUser) {
     return {
       ok: false,
-      response: NextResponse.json({ ok: false, message: 'Session is invalid.' }, { status: 401 }),
+      response: buildExpiredSessionResponse(),
     };
   }
 
-  const appUser = await findAppUserByAuthUserId(authUserResult.data.user.id);
+  const appUser = await findAppUserByAuthUserId(authUser.id);
   if (!appUser) {
     return {
       ok: false,

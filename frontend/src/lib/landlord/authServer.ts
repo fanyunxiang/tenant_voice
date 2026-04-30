@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { findAppUserByAuthUserId } from 'lib/auth/userProvisioning';
-import { ACCESS_TOKEN_COOKIE } from 'lib/auth/constants';
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from 'lib/auth/constants';
 import { getSupabaseAuthClient } from 'lib/supabase/authClient';
+import { buildExpiredSessionResponse, getRequestSessionExpiryValue, isSessionWindowExpired } from 'lib/auth/authErrors';
 
 export type AuthenticatedAppUser = {
   id: string;
@@ -9,6 +10,54 @@ export type AuthenticatedAppUser = {
   fullName: string | null;
   primaryRole: string;
 };
+
+export async function resolveOptionalAppUser(
+  request: NextRequest,
+): Promise<AuthenticatedAppUser | null> {
+  const expiresAt = getRequestSessionExpiryValue(request);
+  if (isSessionWindowExpired(expiresAt)) {
+    return null;
+  }
+
+  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  if (!accessToken && !refreshToken) {
+    return null;
+  }
+
+  const authClient = getSupabaseAuthClient();
+  let authUserId: string | null = null;
+
+  if (accessToken) {
+    const authUserResult = await authClient.auth.getUser(accessToken);
+    if (!authUserResult.error && authUserResult.data.user) {
+      authUserId = authUserResult.data.user.id;
+    }
+  }
+
+  if (!authUserId && refreshToken) {
+    const refreshResult = await authClient.auth.refreshSession({ refresh_token: refreshToken });
+    if (!refreshResult.error && refreshResult.data.session?.user) {
+      authUserId = refreshResult.data.session.user.id;
+    }
+  }
+
+  if (!authUserId) {
+    return null;
+  }
+
+  const appUser = await findAppUserByAuthUserId(authUserId);
+  if (!appUser) {
+    return null;
+  }
+
+  return {
+    id: appUser.id,
+    email: appUser.email,
+    fullName: appUser.full_name,
+    primaryRole: appUser.primary_role,
+  };
+}
 
 export async function resolveAuthenticatedAppUser(
   request: NextRequest,
@@ -22,31 +71,19 @@ export async function resolveAuthenticatedAppUser(
       response: NextResponse;
     }
 > {
-  const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
+  const expiresAt = getRequestSessionExpiryValue(request);
+  if (isSessionWindowExpired(expiresAt)) {
     return {
       ok: false,
-      response: NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 }),
+      response: buildExpiredSessionResponse(),
     };
   }
 
-  const authClient = getSupabaseAuthClient();
-  const authUserResult = await authClient.auth.getUser(accessToken);
-  if (authUserResult.error || !authUserResult.data.user) {
-    return {
-      ok: false,
-      response: NextResponse.json({ ok: false, message: 'Session is invalid.' }, { status: 401 }),
-    };
-  }
-
-  const appUser = await findAppUserByAuthUserId(authUserResult.data.user.id);
+  const appUser = await resolveOptionalAppUser(request);
   if (!appUser) {
     return {
       ok: false,
-      response: NextResponse.json(
-        { ok: false, message: 'Authenticated user is not provisioned.' },
-        { status: 404 },
-      ),
+      response: buildExpiredSessionResponse(),
     };
   }
 
@@ -55,8 +92,8 @@ export async function resolveAuthenticatedAppUser(
     data: {
       id: appUser.id,
       email: appUser.email,
-      fullName: appUser.full_name,
-      primaryRole: appUser.primary_role,
+      fullName: appUser.fullName,
+      primaryRole: appUser.primaryRole,
     },
   };
 }

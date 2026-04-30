@@ -1,3 +1,5 @@
+import { handleExpiredSessionResponse, sessionExpiredError } from 'lib/auth/handleExpiredSessionClient';
+
 type MessagesApiResult<TData = unknown> = {
   ok: boolean;
   message?: string;
@@ -48,6 +50,9 @@ async function parseResult<TData>(response: Response): Promise<MessagesApiResult
   }
 
   if (!response.ok) {
+    if (handleExpiredSessionResponse(response)) {
+      throw sessionExpiredError();
+    }
     throw new Error(body?.message || 'Request failed.');
   }
 

@@ -1,3 +1,5 @@
+import { handleExpiredSessionResponse, sessionExpiredError } from './handleExpiredSessionClient';
+
 export type AuthRole = 'tenant' | 'landlord' | 'maintenance_worker';
 
 export type SessionUser = {
@@ -37,6 +39,9 @@ async function parseResult<TData = undefined>(response: Response): Promise<ApiRe
   }
 
   if (!response.ok) {
+    if (handleExpiredSessionResponse(response)) {
+      throw sessionExpiredError();
+    }
     const message = body?.message || 'Request failed.';
     throw new Error(message);
   }

@@ -1,3 +1,4 @@
+import { handleExpiredSessionResponse, sessionExpiredError } from 'lib/auth/handleExpiredSessionClient';
 import { getSupabaseBrowserClient } from 'lib/supabase/browserClient';
 import { TenantProfileData, TenantProfileDocumentType } from './profile';
 
@@ -28,6 +29,9 @@ async function parseResponse<TData>(response: Response): Promise<TenantProfileAp
   }
 
   if (!response.ok) {
+    if (handleExpiredSessionResponse(response)) {
+      throw sessionExpiredError();
+    }
     throw new Error(body?.message || 'Request failed.');
   }
 

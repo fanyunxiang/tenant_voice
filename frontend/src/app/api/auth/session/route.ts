@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { activateUser, findAppUserByAuthUserId, provisionUserRecord } from 'lib/auth/userProvisioning';
 import { normalizeRegisterableRole } from 'lib/auth/roles';
-import { ACCESS_TOKEN_COOKIE } from 'lib/auth/constants';
+import { ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE } from 'lib/auth/constants';
 import { clearSessionCookies, setSessionCookies, setSessionTokenCookies } from 'lib/auth/sessionCookies';
 import { optionalName, parseJsonBody, validateEmail, validatePassword } from 'lib/auth/validation';
 import { getSupabaseAuthClient } from 'lib/supabase/authClient';
+import { buildExpiredSessionResponse, getRequestSessionExpiryValue, isSessionWindowExpired } from 'lib/auth/authErrors';
 
 export async function POST(request: Request) {
   return createSession(request);
@@ -176,19 +177,44 @@ async function tryCreateSessionFromEmailLink(data: Record<string, unknown>) {
  * Returns the currently authenticated user from the session cookie.
  */
 async function getSession(request: NextRequest) {
+  const expiresAt = getRequestSessionExpiryValue(request);
+  if (isSessionWindowExpired(expiresAt)) {
+    const response = buildExpiredSessionResponse();
+    clearSessionCookies(response);
+    return response;
+  }
+
   const accessToken = request.cookies.get(ACCESS_TOKEN_COOKIE)?.value;
-  if (!accessToken) {
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  if (!accessToken && !refreshToken) {
     return NextResponse.json({ ok: false, message: 'Not authenticated.' }, { status: 401 });
   }
 
   try {
     const authClient = getSupabaseAuthClient();
-    const userResult = await authClient.auth.getUser(accessToken);
-    if (userResult.error || !userResult.data.user) {
+    let authUserId: string | null = null;
+    let refreshedSession: Awaited<ReturnType<typeof authClient.auth.refreshSession>>['data']['session'] | null = null;
+
+    if (accessToken) {
+      const userResult = await authClient.auth.getUser(accessToken);
+      if (!userResult.error && userResult.data.user) {
+        authUserId = userResult.data.user.id;
+      }
+    }
+
+    if (!authUserId && refreshToken) {
+      const refreshResult = await authClient.auth.refreshSession({ refresh_token: refreshToken });
+      if (!refreshResult.error && refreshResult.data.session?.user) {
+        authUserId = refreshResult.data.session.user.id;
+        refreshedSession = refreshResult.data.session;
+      }
+    }
+
+    if (!authUserId) {
       return NextResponse.json({ ok: false, message: 'Session is invalid.' }, { status: 401 });
     }
 
-    const appUser = await findAppUserByAuthUserId(userResult.data.user.id);
+    const appUser = await findAppUserByAuthUserId(authUserId);
     if (!appUser) {
       return NextResponse.json(
         { ok: false, message: 'Authenticated user is not provisioned in app database.' },
@@ -196,10 +222,14 @@ async function getSession(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       ok: true,
       user: appUser,
     });
+    if (refreshedSession) {
+      setSessionCookies(response, refreshedSession);
+    }
+    return response;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to load current user.';
     return NextResponse.json({ ok: false, message }, { status: 500 });

@@ -22,6 +22,7 @@ import {
   type MessageConversationSummary,
   type MessageItem,
 } from 'lib/tenant/messagesClient';
+import { handleExpiredSessionResponse, sessionExpiredError } from 'lib/auth/handleExpiredSessionClient';
 import { getSupabaseBrowserClient } from 'lib/supabase/browserClient';
 import { loadSession } from 'lib/auth/client';
 
@@ -121,6 +122,9 @@ export default function MessagesClient() {
     }
 
     if (!response.ok || !body?.ok || !body.data?.accessToken) {
+      if (handleExpiredSessionResponse(response)) {
+        throw sessionExpiredError();
+      }
       throw new Error(body?.message || 'Failed to initialize realtime authentication.');
     }
 

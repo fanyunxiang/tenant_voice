@@ -1,3 +1,5 @@
+import { handleExpiredSessionResponse, sessionExpiredError } from 'lib/auth/handleExpiredSessionClient';
+
 type ListingDetailApiResult<TData = unknown> = {
   ok: boolean;
   message?: string;
@@ -74,6 +76,21 @@ export type TenantListingDetailData = {
       updatedAt: string;
     } | null;
   };
+  maintenance: {
+    openCount: number;
+    resolvedCount: number;
+    recent: Array<{
+      id: string;
+      category: string;
+      severity: string;
+      status: string;
+      lodgedAt: string;
+      resolvedAt: string | null;
+      reporterName: string;
+      assignedWorker: string | null;
+      note: string;
+    }>;
+  };
   reviews: {
     property: {
       averageRating: number | null;
@@ -108,6 +125,9 @@ async function parseResult<TData>(response: Response): Promise<ListingDetailApiR
   }
 
   if (!response.ok) {
+    if (handleExpiredSessionResponse(response)) {
+      throw sessionExpiredError();
+    }
     throw new Error(body?.message || 'Request failed.');
   }
 

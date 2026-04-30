@@ -27,6 +27,14 @@ type PropertyRow = {
   property_type: string;
 };
 
+type PropertyMediaRow = {
+  property_id: string;
+  media_url: string;
+  is_cover: boolean | null;
+  sort_order: number | null;
+  created_at: string;
+};
+
 type LandlordRow = {
   id: string;
   full_name: string | null;
@@ -65,14 +73,32 @@ function parseNullableNumber(value: string | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const authResult = await resolveAuthenticatedAppUser(request);
-  if (authResult.ok === false) {
-    return authResult.response;
+  const rawQuery = request.nextUrl.searchParams.get('q') ?? '';
+  const rawLocation = request.nextUrl.searchParams.get('location') ?? '';
+  const rawPropertyType = request.nextUrl.searchParams.get('propertyType') ?? '';
+  const rawMinPrice = request.nextUrl.searchParams.get('minPrice') ?? '';
+  const rawMaxPrice = request.nextUrl.searchParams.get('maxPrice') ?? '';
+  const rawMinBedrooms = request.nextUrl.searchParams.get('minBedrooms') ?? '';
+
+  const query = rawQuery.trim().toLowerCase();
+  const locationFilter = rawLocation.trim().toLowerCase();
+  const propertyTypeFilter = rawPropertyType.trim().toUpperCase();
+  const hasFilterConditions = Boolean(
+    query ||
+      locationFilter ||
+      (propertyTypeFilter && propertyTypeFilter !== 'ALL') ||
+      rawMinPrice.trim() ||
+      rawMaxPrice.trim() ||
+      rawMinBedrooms.trim(),
+  );
+
+  if (hasFilterConditions) {
+    const authResult = await resolveAuthenticatedAppUser(request);
+    if (authResult.ok === false) {
+      return authResult.response;
+    }
   }
 
-  const query = (request.nextUrl.searchParams.get('q') ?? '').trim().toLowerCase();
-  const locationFilter = (request.nextUrl.searchParams.get('location') ?? '').trim().toLowerCase();
-  const propertyTypeFilter = (request.nextUrl.searchParams.get('propertyType') ?? '').trim().toUpperCase();
   const requestedPage = parsePositiveInt(request.nextUrl.searchParams.get('page'), DEFAULT_PAGE);
   const requestedPageSize = Math.min(
     parsePositiveInt(request.nextUrl.searchParams.get('pageSize'), DEFAULT_PAGE_SIZE),
@@ -132,6 +158,13 @@ export async function GET(request: NextRequest) {
         .in('id', propertyIds),
       supabase.from('users').select('id, full_name, email').in('id', landlordIds),
     ]);
+    const mediaResult = await supabase
+      .from('property_media')
+      .select('property_id, media_url, is_cover, sort_order, created_at')
+      .in('property_id', propertyIds)
+      .order('is_cover', { ascending: false })
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (propertiesResult.error) {
       throw new Error(`query properties failed: ${propertiesResult.error.message}`);
@@ -139,6 +172,9 @@ export async function GET(request: NextRequest) {
 
     if (landlordsResult.error) {
       throw new Error(`query landlords failed: ${landlordsResult.error.message}`);
+    }
+    if (mediaResult.error) {
+      throw new Error(`query property media failed: ${mediaResult.error.message}`);
     }
 
     const propertiesById = new Map<string, PropertyRow>();
@@ -149,6 +185,14 @@ export async function GET(request: NextRequest) {
     const landlordsById = new Map<string, LandlordRow>();
     (landlordsResult.data ?? []).forEach((row) => {
       landlordsById.set(String(row.id), row as LandlordRow);
+    });
+
+    const coverImageByPropertyId = new Map<string, string>();
+    (mediaResult.data ?? []).forEach((row) => {
+      const media = row as PropertyMediaRow;
+      if (!coverImageByPropertyId.has(media.property_id) && media.media_url) {
+        coverImageByPropertyId.set(media.property_id, media.media_url);
+      }
     });
 
     const normalized = listings
@@ -178,6 +222,7 @@ export async function GET(request: NextRequest) {
           petFriendly: Boolean(property.pet_friendly),
           landlordName,
           publishedAt: listing.published_at,
+          coverImageUrl: coverImageByPropertyId.get(listing.property_id) ?? null,
         };
       })
       .filter((item): item is NonNullable<typeof item> => Boolean(item));

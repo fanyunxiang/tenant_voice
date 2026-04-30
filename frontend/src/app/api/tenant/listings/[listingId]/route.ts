@@ -52,18 +52,23 @@ type ReviewRow = {
   title: string | null;
   body: string | null;
   is_verified_interaction: boolean | null;
-  metadata: unknown;
   created_at: string;
   updated_at: string;
 };
 
-function parseReviewScore(review: ReviewRow) {
-  const metadata = review.metadata as { ratingValue?: unknown } | null;
-  if (metadata && typeof metadata.ratingValue === 'number' && Number.isFinite(metadata.ratingValue)) {
-    const normalized = Math.min(5, Math.max(0.5, Math.round(metadata.ratingValue * 2) / 2));
-    return normalized;
-  }
+type ComplaintRow = {
+  id: string;
+  reporter_user_id: string;
+  category: string;
+  description: string;
+  severity: string;
+  status: string;
+  lodged_at: string;
+  resolved_at: string | null;
+  metadata: unknown;
+};
 
+function parseReviewScore(review: ReviewRow) {
   const fallback = Number(review.rating);
   if (!Number.isFinite(fallback)) {
     return 0;
@@ -130,6 +135,7 @@ export async function GET(
       landlordReviewsResult,
       myReviewResult,
       myMaintenanceResult,
+      maintenanceHistoryResult,
     ] =
       await Promise.all([
         supabase
@@ -150,21 +156,21 @@ export async function GET(
           .eq('listing_id', listing.id),
         supabase
           .from('reviews')
-          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, metadata, created_at, updated_at')
+          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, created_at, updated_at')
           .eq('property_id', listing.property_id)
           .eq('status', 'PUBLISHED')
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
           .from('reviews')
-          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, metadata, created_at, updated_at')
+          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, created_at, updated_at')
           .eq('reviewed_user_id', listing.created_by_user_id)
           .eq('status', 'PUBLISHED')
           .order('created_at', { ascending: false })
           .limit(20),
         supabase
           .from('reviews')
-          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, metadata, created_at, updated_at')
+          .select('id, reviewer_user_id, rating, title, body, is_verified_interaction, created_at, updated_at')
           .eq('property_id', listing.property_id)
           .eq('reviewer_user_id', authResult.data.id)
           .eq('status', 'PUBLISHED')
@@ -177,6 +183,12 @@ export async function GET(
           .eq('property_id', listing.property_id)
           .eq('reporter_user_id', authResult.data.id)
           .in('status', ['OPEN', 'IN_REVIEW', 'ESCALATED']),
+        supabase
+          .from('complaints')
+          .select('id, reporter_user_id, category, description, severity, status, lodged_at, resolved_at, metadata')
+          .eq('property_id', listing.property_id)
+          .order('lodged_at', { ascending: false })
+          .limit(10),
       ]);
 
     if (propertyResult.error) {
@@ -200,6 +212,9 @@ export async function GET(
     if (myMaintenanceResult.error) {
       throw new Error(`query my maintenance requests failed: ${myMaintenanceResult.error.message}`);
     }
+    if (maintenanceHistoryResult.error) {
+      throw new Error(`query maintenance history failed: ${maintenanceHistoryResult.error.message}`);
+    }
 
     if (!propertyResult.data || !landlordResult.data) {
       return NextResponse.json({ ok: false, message: 'Listing details are incomplete.' }, { status: 500 });
@@ -210,17 +225,20 @@ export async function GET(
     const applications = (applicationsResult.data ?? []) as ApplicationRow[];
     const propertyReviews = (propertyReviewsResult.data ?? []) as ReviewRow[];
     const landlordReviews = (landlordReviewsResult.data ?? []) as ReviewRow[];
+    const maintenanceHistory = (maintenanceHistoryResult.data ?? []) as ComplaintRow[];
 
     const reviewerUserIds = Array.from(
       new Set([...propertyReviews, ...landlordReviews].map((review) => review.reviewer_user_id)),
     );
+    const complaintReporterIds = Array.from(new Set(maintenanceHistory.map((row) => row.reporter_user_id)));
+    const relatedUserIds = Array.from(new Set([...reviewerUserIds, ...complaintReporterIds]));
 
     let reviewersById = new Map<string, UserRow>();
-    if (reviewerUserIds.length > 0) {
+    if (relatedUserIds.length > 0) {
       const reviewersResult = await supabase
         .from('users')
         .select('id, full_name, email')
-        .in('id', reviewerUserIds);
+        .in('id', relatedUserIds);
 
       if (reviewersResult.error) {
         throw new Error(`query review authors failed: ${reviewersResult.error.message}`);
@@ -244,6 +262,12 @@ export async function GET(
     const canRequestMaintenance = canReview;
     const myReview = (myReviewResult.data as ReviewRow | null) ?? null;
     const myOpenMaintenanceCount = myMaintenanceResult.count ?? 0;
+    const openMaintenanceCount = maintenanceHistory.filter((item) =>
+      ['OPEN', 'IN_REVIEW', 'ESCALATED'].includes(String(item.status || '').toUpperCase()),
+    ).length;
+    const resolvedMaintenanceCount = maintenanceHistory.filter((item) =>
+      ['RESOLVED', 'CLOSED'].includes(String(item.status || '').toUpperCase()),
+    ).length;
 
     const mapReview = (review: ReviewRow) => {
       const reviewer = reviewersById.get(review.reviewer_user_id);
@@ -255,6 +279,26 @@ export async function GET(
         isVerifiedInteraction: Boolean(review.is_verified_interaction),
         createdAt: review.created_at,
         reviewerName: reviewer?.full_name?.trim() || reviewer?.email || 'Verified user',
+      };
+    };
+    const mapMaintenance = (item: ComplaintRow) => {
+      const reporter = reviewersById.get(item.reporter_user_id);
+      const metadata = (item.metadata ?? {}) as { assignedWorker?: unknown } | null;
+      const assignedWorker =
+        metadata && typeof metadata.assignedWorker === 'string' && metadata.assignedWorker.trim()
+          ? metadata.assignedWorker.trim()
+          : null;
+
+      return {
+        id: item.id,
+        category: item.category,
+        severity: item.severity,
+        status: item.status,
+        lodgedAt: item.lodged_at,
+        resolvedAt: item.resolved_at,
+        reporterName: reporter?.full_name?.trim() || reporter?.email || 'Tenant',
+        assignedWorker,
+        note: item.description,
       };
     };
 
@@ -324,11 +368,16 @@ export async function GET(
               }
             : null,
         },
+        maintenance: {
+          openCount: openMaintenanceCount,
+          resolvedCount: resolvedMaintenanceCount,
+          recent: maintenanceHistory.slice(0, 6).map(mapMaintenance),
+        },
         reviews: {
           property: {
             averageRating: averageRating(propertyReviews),
             totalCount: propertyReviews.length,
-            recent: propertyReviews.slice(0, 5).map(mapReview),
+            recent: propertyReviews.slice(0, 12).map(mapReview),
           },
           landlord: {
             averageRating: averageRating(landlordReviews),

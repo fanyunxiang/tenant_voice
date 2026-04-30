@@ -11,11 +11,12 @@ import { useGlobalNotice } from 'components/feedback/GlobalNoticeProvider';
 
 type SignInClientProps = {
   nextPath?: string;
+  reason?: string;
 };
 
 const NAVIGATION_FALLBACK_RESET_MS = 5000;
 
-export default function SignInClient({ nextPath }: SignInClientProps) {
+export default function SignInClient({ nextPath, reason }: SignInClientProps) {
   const router = useRouter();
   const redirectTarget = useMemo(() => nextPath || APP_DEFAULT_PATH, [nextPath]);
   const { showNotice } = useGlobalNotice();
@@ -38,6 +39,9 @@ export default function SignInClient({ nextPath }: SignInClientProps) {
   const cardBorder = useColorModeValue('secondaryGray.300', 'whiteAlpha.200');
   const primaryButtonBg = useColorModeValue('brand.500', 'brand.300');
   const primaryButtonHoverBg = useColorModeValue('brand.600', 'brand.400');
+  const expiredNoticeBg = useColorModeValue('orange.50', 'orange.900');
+  const expiredNoticeBorder = useColorModeValue('orange.200', 'orange.700');
+  const expiredNoticeText = useColorModeValue('orange.800', 'orange.200');
 
   useEffect(() => {
     return () => {
@@ -110,6 +114,22 @@ export default function SignInClient({ nextPath }: SignInClientProps) {
           p={{ base: '20px', md: '24px' }}
           boxShadow="0 14px 40px rgba(17, 24, 39, 0.06)"
         >
+          {reason === 'expired' ? (
+            <Box
+              mb="16px"
+              px="12px"
+              py="10px"
+              border="1px solid"
+              borderColor={expiredNoticeBorder}
+              bg={expiredNoticeBg}
+              borderRadius="12px"
+            >
+              <Text fontSize="sm" fontWeight="600" color={expiredNoticeText}>
+                Your session has expired. Please sign in again.
+              </Text>
+            </Box>
+          ) : null}
+
           <FormControl>
             <FormLabel display="flex" alignItems="center" mb="8px" fontSize="sm" fontWeight="600" color={textColor}>
               <Text as="span" color={requiredColor} me="6px">
