@@ -17,7 +17,6 @@ import {
 } from 'lib/chakra';
 import {
   ApplicationsData,
-  ApplicationSummary,
   LandlordApplicationDocument,
   LandlordApplicationItem,
   TenantApplicationItem,
@@ -25,38 +24,56 @@ import {
   setApplicationStatus,
 } from 'lib/applications/applicationsClient';
 
-function formatStatus(status: string) {
-  return status
-    .toLowerCase()
-    .split('_')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ');
-}
+type DisplayApplicationStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
 
-function statusToTone(status: string) {
+type DisplayApplicationSummary = {
+  pendingCount: number;
+  approvedCount: number;
+  rejectedCount: number;
+};
+
+function toDisplayStatus(status: string): DisplayApplicationStatus {
   const normalized = status.toUpperCase();
-
-  if (normalized === 'SUBMITTED') {
-    return 'blue';
-  }
-
-  if (normalized === 'UNDER_REVIEW') {
-    return 'yellow';
-  }
-
-  if (normalized === 'SHORTLISTED') {
-    return 'purple';
-  }
-
   if (normalized === 'APPROVED') {
-    return 'green';
+    return 'APPROVED';
   }
 
   if (normalized === 'REJECTED' || normalized === 'DECLINED' || normalized === 'WITHDRAWN' || normalized === 'EXPIRED') {
-    return 'red';
+    return 'REJECTED';
   }
 
-  return 'gray';
+  return 'PENDING';
+}
+
+function formatDisplayStatus(status: string) {
+  const displayStatus = toDisplayStatus(status);
+  if (displayStatus === 'PENDING') {
+    return 'In Progress';
+  }
+  if (displayStatus === 'APPROVED') {
+    return 'Approved';
+  }
+  return 'Rejected';
+}
+
+function getStatusBadgeStyle(status: string) {
+  const displayStatus = toDisplayStatus(status);
+  if (displayStatus === 'PENDING') {
+    return {
+      bg: 'green.500',
+      color: 'white',
+    };
+  }
+  if (displayStatus === 'APPROVED') {
+    return {
+      bg: 'blue.500',
+      color: 'white',
+    };
+  }
+  return {
+    bg: 'red.500',
+    color: 'white',
+  };
 }
 
 function formatDate(value: string | null | undefined) {
@@ -82,35 +99,58 @@ function formatMoney(value: number | null | undefined) {
 
 function SummaryGrid({
   summary,
+  selectedStatus,
+  onSelect,
   panelBg,
   textPrimary,
   textSecondary,
 }: {
-  summary: ApplicationSummary;
+  summary: DisplayApplicationSummary;
+  selectedStatus: DisplayApplicationStatus;
+  onSelect: (status: DisplayApplicationStatus) => void;
   panelBg: string;
   textPrimary: string;
   textSecondary: string;
 }) {
+  const selectedBg = useColorModeValue('blue.600', 'blue.300');
+  const selectedBorder = useColorModeValue('blue.600', 'blue.300');
+  const selectedText = 'white';
+
   const items = [
-    { label: 'Submitted', count: summary.submittedCount },
-    { label: 'Under Review', count: summary.underReviewCount },
-    { label: 'Shortlisted', count: summary.shortlistedCount },
-    { label: 'Approved', count: summary.approvedCount },
-    { label: 'Rejected', count: summary.rejectedCount },
+    { key: 'PENDING' as const, label: 'In Progress', count: summary.pendingCount },
+    { key: 'APPROVED' as const, label: 'Approved', count: summary.approvedCount },
+    { key: 'REJECTED' as const, label: 'Rejected', count: summary.rejectedCount },
   ];
 
   return (
-    <Grid templateColumns={{ base: 'repeat(2, 1fr)', xl: 'repeat(5, 1fr)' }} gap="12px" mb="16px">
-      {items.map((item) => (
-        <Card key={item.label} p="14px" bg={panelBg}>
-          <Text fontSize="xs" color={textSecondary} mb="4px">
-            {item.label}
-          </Text>
-          <Text fontSize="2xl" fontWeight="700" color={textPrimary}>
-            {item.count}
-          </Text>
-        </Card>
-      ))}
+    <Grid templateColumns={{ base: 'repeat(1, 1fr)', md: 'repeat(3, 1fr)' }} gap="12px" mb="16px">
+      {items.map((item) => {
+        const isSelected = selectedStatus === item.key;
+        return (
+          <Card
+            key={item.label}
+            as="button"
+            type="button"
+            p="14px"
+            bg={isSelected ? selectedBg : panelBg}
+            border="1px solid"
+            borderColor={isSelected ? selectedBorder : 'transparent'}
+            textAlign="left"
+            cursor="pointer"
+            transition="all 0.18s ease"
+            boxShadow={isSelected ? '0 10px 22px rgba(49, 130, 206, 0.25)' : 'none'}
+            aria-pressed={isSelected}
+            onClick={() => onSelect(item.key)}
+          >
+            <Text fontSize="14px" fontWeight="700" color={isSelected ? selectedText : textSecondary} mb="4px">
+              {item.label}
+            </Text>
+            <Text fontSize="2xl" fontWeight="700" color={isSelected ? selectedText : textPrimary}>
+              {item.count}
+            </Text>
+          </Card>
+        );
+      })}
     </Grid>
   );
 }
@@ -132,6 +172,24 @@ function TenantListSection({
   textPrimary: string;
   textSecondary: string;
 }) {
+  const buildBadge = (status: string) => {
+    const badgeStyle = getStatusBadgeStyle(status);
+    return (
+      <Badge
+        bg={badgeStyle.bg}
+        color={badgeStyle.color}
+        px="10px"
+        py="6px"
+        borderRadius="999px"
+        fontSize="xs"
+        fontWeight="700"
+        textTransform="none"
+      >
+        {formatDisplayStatus(status)}
+      </Badge>
+    );
+  };
+
   return (
     <Card p="0" bg={panelBg} mb="16px">
       <Flex px="16px" py="14px" borderBottom="1px solid" borderColor={borderColor} align="center">
@@ -147,45 +205,51 @@ function TenantListSection({
           </Text>
         </Box>
       ) : (
-        items.map((item) => (
-          <Flex
-            key={item.id}
-            px="16px"
-            py="14px"
-            borderBottom="1px solid"
-            borderColor={borderColor}
-            align="center"
-            justify="space-between"
-            gap="12px"
-            wrap="wrap"
-          >
-            <Box minW="240px" flex="1">
-              <Text fontWeight="700" color={textPrimary}>
-                {item.listing?.title || 'Listing'}
-              </Text>
-              <Text fontSize="sm" color={textSecondary}>
-                {item.property
-                  ? `${item.property.addressLine1}, ${item.property.suburb} ${item.property.state} ${item.property.postcode}`
-                  : 'Address unavailable'}
-              </Text>
-              <Text fontSize="sm" color={textSecondary}>
-                Submitted {formatDate(item.submittedAt)} · Updated {formatDate(item.lastStatusAt)}
-              </Text>
-              {item.message ? (
-                <Text fontSize="sm" color={textSecondary} mt="4px" noOfLines={2}>
-                  Note: {item.message}
-                </Text>
-              ) : null}
-            </Box>
+        items.map((item) => {
+          const displayStatus = toDisplayStatus(item.status);
 
-            <Flex align="center" gap="8px" wrap="wrap" justify={{ base: 'flex-start', md: 'flex-end' }}>
-              <Badge colorScheme={statusToTone(item.status)}>{formatStatus(item.status)}</Badge>
-              <Button as={NextLink} href={`/admin/listings/${item.listingId}`} size="sm" variant="outline">
-                View Listing
-              </Button>
+          return (
+            <Flex
+              key={item.id}
+              px="16px"
+              py="14px"
+              borderBottom="1px solid"
+              borderColor={borderColor}
+              align="center"
+              justify="space-between"
+              gap="12px"
+              wrap="wrap"
+            >
+              <Box minW="240px" flex="1">
+                <Flex direction="column" gap="6px">
+                  <Text fontWeight="700" color={textPrimary} lineHeight="1.35">
+                    {item.listing?.title || 'Listing'}
+                  </Text>
+                  <Text fontSize="sm" color={textSecondary} lineHeight="1.5">
+                    {item.property
+                      ? `${item.property.addressLine1}, ${item.property.suburb} ${item.property.state} ${item.property.postcode}`
+                      : 'Address unavailable'}
+                  </Text>
+                  <Text fontSize="sm" color={textSecondary} lineHeight="1.5">
+                    Submitted {formatDate(item.submittedAt)}
+                  </Text>
+                  {item.message ? (
+                    <Text fontSize="sm" color={textSecondary} lineHeight="1.5" noOfLines={2}>
+                      Note: {item.message}
+                    </Text>
+                  ) : null}
+                </Flex>
+              </Box>
+
+              <Flex align="center" gap="8px" wrap="wrap" justify={{ base: 'flex-start', md: 'flex-end' }}>
+                {displayStatus !== 'PENDING' ? buildBadge(item.status) : null}
+                <Button as={NextLink} href={`/admin/listings/${item.listingId}`} size="sm" variant="outline">
+                  View Listing
+                </Button>
+              </Flex>
             </Flex>
-          </Flex>
-        ))
+          );
+        })
       )}
     </Card>
   );
@@ -202,6 +266,7 @@ export default function ApplicationsClient() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewDocuments, setPreviewDocuments] = useState<LandlordApplicationDocument[]>([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [selectedStatus, setSelectedStatus] = useState<DisplayApplicationStatus>('PENDING');
 
   const textPrimary = useColorModeValue('secondaryGray.900', 'white');
   const textSecondary = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
@@ -217,6 +282,57 @@ export default function ApplicationsClient() {
 
     return previewDocuments[Math.min(Math.max(previewIndex, 0), previewDocuments.length - 1)] ?? null;
   }, [previewDocuments, previewIndex, previewOpen]);
+
+  const summaryForDisplay = useMemo<DisplayApplicationSummary>(() => {
+    if (!data) {
+      return { pendingCount: 0, approvedCount: 0, rejectedCount: 0 };
+    }
+
+    const statusList =
+      data.role === 'LANDLORD'
+        ? data.applications.map((item) => item.status)
+        : [...data.activeApplications, ...data.historyApplications].map((item) => item.status);
+
+    return statusList.reduce<DisplayApplicationSummary>(
+      (acc, status) => {
+        const displayStatus = toDisplayStatus(status);
+        if (displayStatus === 'PENDING') {
+          acc.pendingCount += 1;
+        } else if (displayStatus === 'APPROVED') {
+          acc.approvedCount += 1;
+        } else {
+          acc.rejectedCount += 1;
+        }
+        return acc;
+      },
+      { pendingCount: 0, approvedCount: 0, rejectedCount: 0 },
+    );
+  }, [data]);
+
+  const tenantAllApplications = useMemo<TenantApplicationItem[]>(() => {
+    if (!data || data.role !== 'TENANT') {
+      return [];
+    }
+
+    return [...data.activeApplications, ...data.historyApplications].sort((a, b) => {
+      const aTime = new Date(a.submittedAt).getTime();
+      const bTime = new Date(b.submittedAt).getTime();
+      return bTime - aTime;
+    });
+  }, [data]);
+
+  const filteredTenantApplications = useMemo<TenantApplicationItem[]>(
+    () => tenantAllApplications.filter((item) => toDisplayStatus(item.status) === selectedStatus),
+    [tenantAllApplications, selectedStatus],
+  );
+
+  const filteredLandlordApplications = useMemo<LandlordApplicationItem[]>(
+    () =>
+      data && data.role === 'LANDLORD'
+        ? data.applications.filter((item) => toDisplayStatus(item.status) === selectedStatus)
+        : [],
+    [data, selectedStatus],
+  );
 
   const refreshApplications = useCallback(
     async (mode: 'initial' | 'refresh' = 'refresh') => {
@@ -336,29 +452,25 @@ export default function ApplicationsClient() {
         </Button>
       </Flex>
 
-      <SummaryGrid summary={data.summary} panelBg={panelBg} textPrimary={textPrimary} textSecondary={textSecondary} />
+      <SummaryGrid
+        summary={summaryForDisplay}
+        selectedStatus={selectedStatus}
+        onSelect={setSelectedStatus}
+        panelBg={panelBg}
+        textPrimary={textPrimary}
+        textSecondary={textSecondary}
+      />
 
       {data.role === 'TENANT' ? (
-        <>
-          <TenantListSection
-            title="Active Applications"
-            emptyText="No active applications."
-            items={data.activeApplications}
-            panelBg={panelBg}
-            borderColor={borderColor}
-            textPrimary={textPrimary}
-            textSecondary={textSecondary}
-          />
-          <TenantListSection
-            title="Application History"
-            emptyText="No history records yet."
-            items={data.historyApplications}
-            panelBg={panelBg}
-            borderColor={borderColor}
-            textPrimary={textPrimary}
-            textSecondary={textSecondary}
-          />
-        </>
+        <TenantListSection
+          title="Applications"
+          emptyText="No applications found for this status."
+          items={filteredTenantApplications}
+          panelBg={panelBg}
+          borderColor={borderColor}
+          textPrimary={textPrimary}
+          textSecondary={textSecondary}
+        />
       ) : (
         <Card p="0" bg={panelBg}>
           <Flex px="16px" py="14px" borderBottom="1px solid" borderColor={borderColor} align="center">
@@ -367,16 +479,18 @@ export default function ApplicationsClient() {
             </Text>
           </Flex>
 
-          {data.applications.length === 0 ? (
+          {filteredLandlordApplications.length === 0 ? (
             <Box p="16px">
               <Text color={textSecondary} fontSize="sm">
-                No rental applications yet.
+                No applications found for this status.
               </Text>
             </Box>
           ) : (
-            data.applications.map((item: LandlordApplicationItem) => {
+            filteredLandlordApplications.map((item: LandlordApplicationItem) => {
               const docs = item.documents.filter((doc) => Boolean(doc.url));
               const isUpdating = Boolean(updatingByApplicationId[item.id]);
+              const badgeStyle = getStatusBadgeStyle(item.status);
+              const displayStatus = toDisplayStatus(item.status);
 
               return (
                 <Box key={item.id} px="16px" py="14px" borderBottom="1px solid" borderColor={borderColor}>
@@ -395,7 +509,7 @@ export default function ApplicationsClient() {
                         {item.applicant.email ? ` (${item.applicant.email})` : ''}
                       </Text>
                       <Text fontSize="sm" color={textSecondary}>
-                        Submitted {formatDate(item.submittedAt)} · Last update {formatDate(item.lastStatusAt)}
+                        Submitted {formatDate(item.submittedAt)}
                       </Text>
                       <Text fontSize="sm" color={textSecondary}>
                         Offer rent: {formatMoney(item.offerWeeklyRent)} / week
@@ -408,7 +522,20 @@ export default function ApplicationsClient() {
                     </Box>
 
                     <Flex direction="column" align={{ base: 'flex-start', md: 'flex-end' }} gap="8px">
-                      <Badge colorScheme={statusToTone(item.status)}>{formatStatus(item.status)}</Badge>
+                      {displayStatus !== 'PENDING' ? (
+                        <Badge
+                          bg={badgeStyle.bg}
+                          color={badgeStyle.color}
+                          px="10px"
+                          py="6px"
+                          borderRadius="999px"
+                          fontSize="xs"
+                          fontWeight="700"
+                          textTransform="none"
+                        >
+                          {formatDisplayStatus(item.status)}
+                        </Badge>
+                      ) : null}
                       <Button
                         as={NextLink}
                         href={item.listing?.id ? `/admin/listings/${item.listing.id}` : '/admin/listings'}
